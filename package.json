@@ -1,0 +1,19 @@
+{
+  "name": "acs.warranty.api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.3",
+    "express": "^4.21.1",
+    "googleapis": "^167.0.0"
+  }
+}
