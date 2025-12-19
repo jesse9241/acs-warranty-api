@@ -1,221 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>ACS Warranty Claim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #f4f5f7;
-      margin: 0;
-      padding: 0;
-    }
+<script>
+document.getElementById("warranty-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-    .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: #ffffff;
-      padding: 1.5rem 1.75rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
+    const form = e.target;
 
-    h1 {
-      font-size: 1.4rem;
-      margin-bottom: 0.25rem;
-      color: #222;
-    }
-
-    p.subtitle {
-      margin-top: 0;
-      font-size: 0.9rem;
-      color: #555;
-    }
-
-    .field {
-      margin-bottom: 0.85rem;
-    }
-
-    label {
-      display: block;
-      font-size: 0.9rem;
-      font-weight: 600;
-      margin-bottom: 0.25rem;
-      color: #333;
-    }
-
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    input[type="date"],
-    textarea,
-    select {
-      width: 100%;
-      padding: 0.5rem 0.6rem;
-      font-size: 0.95rem;
-      border-radius: 6px;
-      border: 1px solid #ccd0d5;
-      box-sizing: border-box;
-    }
-
-    textarea {
-      min-height: 80px;
-      resize: vertical;
-    }
-
-    button {
-      width: 100%;
-      padding: 0.7rem;
-      font-size: 1rem;
-      font-weight: 600;
-      border-radius: 6px;
-      border: none;
-      cursor: pointer;
-      background: #0b8457;
-      color: #fff;
-    }
-
-    button:disabled {
-      background: #9fb9a9;
-      cursor: not-allowed;
-    }
-
-    .status {
-      margin-top: 0.75rem;
-      font-size: 0.9rem;
-    }
-
-    .status.ok {
-      color: #0b8457;
-    }
-
-    .status.error {
-      color: #c0392b;
-    }
-
-    @media (max-width: 600px) {
-      .container {
-        margin: 0.5rem;
-      }
-      h1 {
-        font-size: 1.2rem;
-      }
-    }
-  </style>
-</head>
-
-<body>
-  <div class="container">
-    <h1>ACS Warranty Claim</h1>
-    <p class="subtitle">
-      Please complete this form to submit your warranty request. Fields marked * are required.
-    </p>
-
-    <form id="warranty-form">
-
-      <!-- Customer Name (REQUIRED) -->
-      <div class="field">
-        <label for="customerName">Customer Name *</label>
-        <input id="customerName" type="text" required />
-      </div>
-
-      <!-- Customer Email (REQUIRED) -->
-      <div class="field">
-        <label for="customerEmail">Customer Email *</label>
-        <input id="customerEmail" type="email" required />
-      </div>
-
-      <!-- Customer Phone (OPTIONAL) -->
-      <div class="field">
-        <label for="customerPhone">Customer Phone</label>
-        <input id="customerPhone" type="tel" />
-      </div>
-
-      <!-- Source (REQUIRED) -->
-      <div class="field">
-       <label for="source">Source *</label>
-<select id="source" name="source" required>
-  <option value="">Select source</option>
-  <option value="Shopify">Shopify</option>
-  <option value="eBay">eBay</option>
-  <option value="Other">Other</option>
-</select>
-      </div>
-
-      <!-- Original Order # (REQUIRED) -->
-      <div class="field">
-        <label for="originalOrderNumber">Original Order # *</label>
-        <input id="originalOrderNumber" type="text" required />
-      </div>
-
-      <!-- Original Warranty # (REQUIRED) -->
-      <div class="field">
-        <label for="originalWarrantyNumber">Original Warranty # *</label>
-        <input id="originalWarrantyNumber" type="text" required />
-      </div>
-
-      <!-- Original Order Date (OPTIONAL) -->
-      <div class="field">
-        <label for="originalOrderDate">Original Order Date</label>
-        <input id="originalOrderDate" type="date" />
-      </div>
-
-      <!-- Product (REQUIRED) -->
-      <div class="field">
-        <label for="product">Product / Vehicle *</label>
-        <input id="product" type="text" required />
-      </div>
-
-      <!-- UPC (OPTIONAL) -->
-      <div class="field">
-        <label for="upc">UPC</label>
-        <input id="upc" type="text" />
-      </div>
-
-      <!-- Issue Description (REQUIRED) -->
-      <div class="field">
-        <label for="issueDescription">Issue Description *</label>
-        <textarea id="issueDescription" required></textarea>
-      </div>
-
-      <!-- Address (OPTIONAL) -->
-      <div class="field">
-        <label for="customerAddress">Customer Address</label>
-        <textarea id="customerAddress"></textarea>
-      </div>
-
-      <!-- Notes (OPTIONAL) -->
-      <div class="field">
-        <label for="notes">Additional Notes</label>
-        <textarea id="notes"></textarea>
-      </div>
-
-      <button type="submit" id="submitBtn">Submit Warranty Claim</button>
-      <div id="status" class="status"></div>
-    </form>
-  </div>
-
-  <script>
-    // LOCAL TESTING:
-    const API_BASE = "http://localhost:4000";
-
-    // WHEN DEPLOYING TO RENDER:
-    // const API_BASE = "https://acs-warranty-api.onrender.com";
-
-    const form = document.getElementById("warranty-form");
-    const statusEl = document.getElementById("status");
-    const submitBtn = document.getElementById("submitBtn");
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      statusEl.textContent = "";
-      statusEl.className = "status";
-
-      submitBtn.disabled = true;
-      submitBtn.textContent = "Submitting...";
-
-      const data = {
+    // Build data EXACTLY matching server.js expected fields
+    const data = {
         claimId: "",
         source: form.source.value.trim(),
         customerName: form.customerName.value.trim(),
@@ -236,35 +26,47 @@
         customerPhone: form.customerPhone.value.trim(),
         customerEmail: form.customerEmail.value.trim(),
         customerAddress: form.customerAddress.value.trim(),
-        notes: form.notes.value.trim(),
-      };
+        notes: form.notes.value.trim()
+    };
 
-      try {
-        const response = await fetch(`${API_BASE}/warranty`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+    // Switch automatically between local and Render
+    const API_URL =
+        location.hostname === "localhost"
+            ? "http://localhost:4000/warranty"
+            : "https://acs-warranty-api.onrender.com/warranty";
+
+    // UI feedback
+    const statusEl = document.getElementById("status");
+    const submitBtn = document.getElementById("submitBtn");
+    statusEl.textContent = "";
+    statusEl.className = "status";
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Submitting...";
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
         });
 
         const result = await response.json();
 
-        if (response.ok && result.success) {
-          statusEl.textContent = "✅ Warranty claim submitted successfully!";
-          statusEl.classList.add("ok");
-          form.reset();
+        if (result.success) {
+            statusEl.textContent = "✅ Warranty claim submitted successfully!";
+            statusEl.classList.add("ok");
+            form.reset();
         } else {
-          statusEl.textContent = "⚠️ Failed to submit claim.";
-          statusEl.classList.add("error");
+            statusEl.textContent = "⚠️ Failed to submit claim: " + (result.error || "Unknown error");
+            statusEl.classList.add("error");
         }
-      } catch (err) {
+
+    } catch (err) {
         statusEl.textContent = "⚠️ Network error — please try again.";
         statusEl.classList.add("error");
-      } finally {
+    } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = "Submit Warranty Claim";
-      }
-    });
-  </script>
-
-</body>
-</html>
+    }
+});
+</script>
