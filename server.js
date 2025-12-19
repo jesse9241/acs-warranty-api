@@ -19,8 +19,17 @@ app.use(express.static(path.join(__dirname, "Public")));
  * This is what fixes the blank page
  */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "Public", "warranty.html"));
+  res.send(`
+    <html>
+      <head><title>ACS Test</title></head>
+      <body style="font-family: sans-serif">
+        <h1>✅ SERVER IS RESPONDING</h1>
+        <p>If you see this, routing works.</p>
+      </body>
+    </html>
+  `);
 });
+
 
 /**
  * Warranty submission API
