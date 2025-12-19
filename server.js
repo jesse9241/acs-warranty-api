@@ -7,29 +7,21 @@ const { appendWarrantyRow } = require("./sheets");
 const { sendWarrantyEmail } = require("./email");
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-// Serve static files from /Public
-app.use(express.static(path.join(__dirname, "Public")));
-
 /**
- * ✅ ROOT ROUTE
- * This is what fixes the blank page
+ * ✅ ROOT ROUTE — THIS IS THE MISSING PIECE
+ * This tells Express what to show at "/"
  */
 app.get("/", (req, res) => {
-  res.send(`
-    <html>
-      <head><title>ACS Test</title></head>
-      <body style="font-family: sans-serif">
-        <h1>✅ SERVER IS RESPONDING</h1>
-        <p>If you see this, routing works.</p>
-      </body>
-    </html>
-  `);
+  res.sendFile(path.join(__dirname, "Public", "warranty.html"));
 });
 
+/**
+ * Optional: serve other static assets if needed later
+ */
+app.use("/static", express.static(path.join(__dirname, "Public")));
 
 /**
  * Warranty submission API
@@ -43,19 +35,19 @@ app.post("/warranty", async (req, res) => {
       d.source || "",
       d.customerName || "",
       d.originalOrderNumber || "",
-      d.originalOrder || "",
+      "",
       d.originalOrderDate || "",
       d.originalWarrantyNumber || "",
-      d.previousWarrantyDate || "",
-      d.dateReceived || "",
-      d.newOrderNumber || "",
-      d.newWarrantyNumber || "",
+      "",
+      new Date().toISOString().split("T")[0],
+      "",
+      "",
       d.product || "",
       d.issueDescription || "",
       "",
       d.upc || "",
-      d.replacementTracking || "",
-      d.status || "Submitted",
+      "",
+      "Submitted",
       d.customerPhone || "",
       d.customerEmail || "",
       d.customerAddress || "",
@@ -66,13 +58,15 @@ app.post("/warranty", async (req, res) => {
     await sendWarrantyEmail(d);
 
     res.json({ success: true });
+
   } catch (err) {
-    console.error("Warranty error:", err);
+    console.error("❌ Warranty submission error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
 const PORT = process.env.PORT || 4000;
+
 app.listen(PORT, () => {
   console.log(`🚀 Warranty API running on port ${PORT}`);
 });
