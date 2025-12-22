@@ -1,72 +1,129 @@
-<script>
-document.getElementById("warranty-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>ACS Warranty Claim</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-    const form = e.target;
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f5f7;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    .field { margin-bottom: 1rem; }
+    label { font-weight: 600; display: block; margin-bottom: 0.25rem; }
+    input, textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem;
+      background: #0b8457;
+      color: white;
+      border: none;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+    .status { margin-top: 1rem; }
+    .ok { color: green; }
+    .error { color: red; }
+  </style>
+</head>
 
-    // Build data EXACTLY matching server.js expected fields
-    const data = {
-        claimId: "",
-        source: form.source.value.trim(),
-        customerName: form.customerName.value.trim(),
-        originalOrderNumber: form.originalOrderNumber.value.trim(),
-        originalOrder: "",
-        originalOrderDate: form.originalOrderDate.value || "",
-        originalWarrantyNumber: form.originalWarrantyNumber.value.trim(),
-        previousWarrantyDate: "",
-        dateReceived: new Date().toISOString().split("T")[0],
-        newOrderNumber: "",
-        newWarrantyNumber: "",
-        product: form.product.value.trim(),
-        issueDescription: form.issueDescription.value.trim(),
-        technicianAssigned: "",
-        upc: form.upc.value.trim() || "",
-        replacementTracking: "",
-        status: "Submitted",
-        customerPhone: form.customerPhone.value.trim(),
-        customerEmail: form.customerEmail.value.trim(),
-        customerAddress: form.customerAddress.value.trim(),
-        notes: form.notes.value.trim()
-    };
+<body>
+  <div class="container">
+    <h1>ACS Warranty Claim</h1>
 
-    // Switch automatically between local and Render
-    const API_URL =
+    <form id="warranty-form">
+      <div class="field">
+        <label>Customer Name *</label>
+        <input name="customerName" required />
+      </div>
+
+      <div class="field">
+        <label>Customer Email *</label>
+        <input name="customerEmail" type="email" required />
+      </div>
+
+      <div class="field">
+        <label>Source *</label>
+        <select name="source" required>
+          <option value="">Select</option>
+          <option>Shopify</option>
+          <option>eBay</option>
+          <option>Other</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Original Order # *</label>
+        <input name="originalOrderNumber" required />
+      </div>
+
+      <div class="field">
+        <label>Original Warranty # *</label>
+        <input name="originalWarrantyNumber" required />
+      </div>
+
+      <div class="field">
+        <label>Product *</label>
+        <input name="product" required />
+      </div>
+
+      <div class="field">
+        <label>Issue Description *</label>
+        <textarea name="issueDescription" required></textarea>
+      </div>
+
+      <button id="submitBtn">Submit Warranty</button>
+      <div id="status" class="status"></div>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("warranty-form").addEventListener("submit", async e => {
+      e.preventDefault();
+
+      const form = e.target;
+      const status = document.getElementById("status");
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      const API =
         location.hostname === "localhost"
-            ? "http://localhost:4000/warranty"
-            : "https://acs-warranty-api.onrender.com/warranty";
+          ? "http://localhost:4000/warranty"
+          : "https://acs-warranty-api.onrender.com/warranty";
 
-    // UI feedback
-    const statusEl = document.getElementById("status");
-    const submitBtn = document.getElementById("submitBtn");
-    statusEl.textContent = "";
-    statusEl.className = "status";
-    submitBtn.disabled = true;
-    submitBtn.textContent = "Submitting...";
-
-    try {
-        const response = await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
+      try {
+        const res = await fetch(API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data)
         });
 
-        const result = await response.json();
+        const json = await res.json();
 
-        if (result.success) {
-            statusEl.textContent = "✅ Warranty claim submitted successfully!";
-            statusEl.classList.add("ok");
-            form.reset();
+        if (json.success) {
+          status.textContent = "✅ Submitted!";
+          status.className = "status ok";
+          form.reset();
         } else {
-            statusEl.textContent = "⚠️ Failed to submit claim: " + (result.error || "Unknown error");
-            statusEl.classList.add("error");
+          throw new Error(json.error);
         }
-
-    } catch (err) {
-        statusEl.textContent = "⚠️ Network error — please try again.";
-        statusEl.classList.add("error");
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "Submit Warranty Claim";
-    }
-});
-</script>
+      } catch (err) {
+        status.textContent = "❌ Error submitting form";
+        status.className = "status error";
+      }
+    });
+  </script>
+</body>
+</html>
