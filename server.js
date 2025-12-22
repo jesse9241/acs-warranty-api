@@ -1,54 +1,57 @@
-// server.js – FINAL, FIXED VERSION
-
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+
 const { appendWarrantyRow } = require("./sheets");
 const { sendWarrantyEmail } = require("./email");
 
-console.log("🔥 SERVER.JS LOADED");
-
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
-// ✅ Serve static files
-app.use(express.static(path.join(__dirname, "Public")));
+console.log("🔥 SERVER.JS LOADED");
 
-// ✅ ROOT ROUTE — THIS WAS MISSING
+/* =========================
+   FORCE ROOT PAGE
+========================= */
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "Public", "warranty.html"));
+  res.sendFile(path.join(__dirname, "Public", "index.html"));
 });
 
-// ✅ Health check
+/* =========================
+   Health Check
+========================= */
 app.get("/health", (req, res) => {
-  res.json({ status: "Server is responding" });
+  res.send("Server is responding");
 });
 
-// ✅ Warranty submission
+/* =========================
+   Warranty API
+========================= */
 app.post("/warranty", async (req, res) => {
   try {
     const d = req.body;
 
     const row = [
-      d.claimId || "",
+      "",
       d.source || "",
       d.customerName || "",
       d.originalOrderNumber || "",
-      d.originalOrder || "",
+      "",
       d.originalOrderDate || "",
       d.originalWarrantyNumber || "",
-      d.previousWarrantyDate || "",
-      d.dateReceived || "",
-      d.newOrderNumber || "",
-      d.newWarrantyNumber || "",
+      "",
+      new Date().toISOString().split("T")[0],
+      "",
+      "",
       d.product || "",
       d.issueDescription || "",
       "",
       d.upc || "",
-      d.replacementTracking || "",
-      d.status || "Submitted",
+      "",
+      "Submitted",
       d.customerPhone || "",
       d.customerEmail || "",
       d.customerAddress || "",
@@ -56,15 +59,19 @@ app.post("/warranty", async (req, res) => {
     ];
 
     await appendWarrantyRow(process.env.GOOGLE_SHEET_ID, row);
-    await sendWarrantyEmail(d);
+    sendWarrantyEmail(d).catch(() => {});
 
     res.json({ success: true });
+
   } catch (err) {
-    console.error("❌ Warranty submission error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    console.error(err);
+    res.status(500).json({ success: false });
   }
 });
 
+/* =========================
+   Start Server
+========================= */
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Warranty API running on port ${PORT}`);
