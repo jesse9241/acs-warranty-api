@@ -1,10 +1,10 @@
 require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
 const path = require("path");
+const cors = require("cors");
 
-const { appendWarrantyRow } = require("./sheets");
-const { sendWarrantyEmail } = require("./email");
+// Node 18+ / Render supports global fetch
+// (no need to import node-fetch)
 
 const app = express();
 
@@ -13,66 +13,62 @@ app.use(express.json());
 
 console.log("🔥 SERVER.JS LOADED");
 
-/* =========================
-   FORCE ROOT PAGE
-========================= */
+// ================================
+// SERVE WARRANTY FORM (ROOT)
+// ================================
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "Public", "index.html"));
+  const filePath = path.join(__dirname, "Public", "index.html");
+  console.log("📄 Serving file:", filePath);
+  res.sendFile(filePath);
 });
 
-/* =========================
-   Health Check
-========================= */
+// ================================
+// HEALTH CHECK
+// ================================
 app.get("/health", (req, res) => {
   res.send("Server is responding");
 });
 
-/* =========================
-   Warranty API
-========================= */
+// ================================
+// WARRANTY SUBMISSION ROUTE
+// ================================
 app.post("/warranty", async (req, res) => {
   try {
-    const d = req.body;
+    if (!process.env.APPS_SCRIPT_URL) {
+      throw new Error("Missing APPS_SCRIPT_URL environment variable");
+    }
 
-    const row = [
-      "",
-      d.source || "",
-      d.customerName || "",
-      d.originalOrderNumber || "",
-      "",
-      d.originalOrderDate || "",
-      d.originalWarrantyNumber || "",
-      "",
-      new Date().toISOString().split("T")[0],
-      "",
-      "",
-      d.product || "",
-      d.issueDescription || "",
-      "",
-      d.upc || "",
-      "",
-      "Submitted",
-      d.customerPhone || "",
-      d.customerEmail || "",
-      d.customerAddress || "",
-      d.notes || ""
-    ];
+    const payload = req.body;
 
-    await appendWarrantyRow(process.env.GOOGLE_SHEET_ID, row);
-    sendWarrantyEmail(d).catch(() => {});
+    const response = await fetch(process.env.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Apps Script error: ${text}`);
+    }
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+    console.error("❌ Warranty submission failed:", err.message);
+    res.status(500).json({
+      success: false,
+      error: err.message
+    });
   }
 });
 
-/* =========================
-   Start Server
-========================= */
+// ================================
+// START SERVER
+// ================================
 const PORT = process.env.PORT || 4000;
+
 app.listen(PORT, () => {
-  console.log(`🚀 Warranty API running on port ${PORT}`);
+  console.log(`🚀 Server listening on port ${PORT}`);
 });
