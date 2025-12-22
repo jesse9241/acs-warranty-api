@@ -4,10 +4,9 @@
   <meta charset="UTF-8" />
   <title>ACS Warranty Claim</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <style>
     body {
-      font-family: system-ui, sans-serif;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       background: #f4f5f7;
       margin: 0;
       padding: 0;
@@ -15,115 +14,86 @@
     .container {
       max-width: 600px;
       margin: 2rem auto;
-      background: #fff;
+      background: #ffffff;
       padding: 1.5rem;
-      border-radius: 8px;
+      border-radius: 10px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
-    .field { margin-bottom: 1rem; }
-    label { font-weight: 600; display: block; margin-bottom: 0.25rem; }
-    input, textarea, select {
+    h1 { margin-top: 0; }
+    label { display: block; margin-top: 0.75rem; font-weight: 600; }
+    input, textarea, select, button {
       width: 100%;
       padding: 0.5rem;
+      margin-top: 0.25rem;
     }
     button {
-      width: 100%;
-      padding: 0.75rem;
+      margin-top: 1rem;
       background: #0b8457;
       color: white;
       border: none;
-      font-size: 1rem;
       cursor: pointer;
     }
     .status { margin-top: 1rem; }
-    .ok { color: green; }
-    .error { color: red; }
   </style>
 </head>
-
 <body>
-  <div class="container">
-    <h1>ACS Warranty Claim</h1>
 
-    <form id="warranty-form">
-      <div class="field">
-        <label>Customer Name *</label>
-        <input name="customerName" required />
-      </div>
+<div class="container">
+  <h1>ACS Warranty Claim</h1>
 
-      <div class="field">
-        <label>Customer Email *</label>
-        <input name="customerEmail" type="email" required />
-      </div>
+  <form id="warranty-form">
+    <label>Customer Name *</label>
+    <input name="customerName" required />
 
-      <div class="field">
-        <label>Source *</label>
-        <select name="source" required>
-          <option value="">Select</option>
-          <option>Shopify</option>
-          <option>eBay</option>
-          <option>Other</option>
-        </select>
-      </div>
+    <label>Email *</label>
+    <input name="customerEmail" type="email" required />
 
-      <div class="field">
-        <label>Original Order # *</label>
-        <input name="originalOrderNumber" required />
-      </div>
+    <label>Order Number *</label>
+    <input name="originalOrderNumber" required />
 
-      <div class="field">
-        <label>Original Warranty # *</label>
-        <input name="originalWarrantyNumber" required />
-      </div>
+    <label>Warranty Number *</label>
+    <input name="originalWarrantyNumber" required />
 
-      <div class="field">
-        <label>Product *</label>
-        <input name="product" required />
-      </div>
+    <label>Product *</label>
+    <input name="product" required />
 
-      <div class="field">
-        <label>Issue Description *</label>
-        <textarea name="issueDescription" required></textarea>
-      </div>
+    <label>Issue *</label>
+    <textarea name="issueDescription" required></textarea>
 
-      <button id="submitBtn">Submit Warranty</button>
-      <div id="status" class="status"></div>
-    </form>
-  </div>
+    <button type="submit">Submit Warranty</button>
+    <div id="status" class="status"></div>
+  </form>
+</div>
 
-  <script>
-    document.getElementById("warranty-form").addEventListener("submit", async e => {
-      e.preventDefault();
+<script>
+document.getElementById("warranty-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-      const form = e.target;
-      const status = document.getElementById("status");
-      const data = Object.fromEntries(new FormData(form).entries());
+  const form = e.target;
+  const status = document.getElementById("status");
 
-      const API =
-        location.hostname === "localhost"
-          ? "http://localhost:4000/warranty"
-          : "https://acs-warranty-api.onrender.com/warranty";
+  const data = Object.fromEntries(new FormData(form).entries());
 
-      try {
-        const res = await fetch(API, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data)
-        });
-
-        const json = await res.json();
-
-        if (json.success) {
-          status.textContent = "✅ Submitted!";
-          status.className = "status ok";
-          form.reset();
-        } else {
-          throw new Error(json.error);
-        }
-      } catch (err) {
-        status.textContent = "❌ Error submitting form";
-        status.className = "status error";
-      }
+  try {
+    const res = await fetch("/warranty", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
     });
-  </script>
+
+    const result = await res.json();
+
+    if (result.success) {
+      status.textContent = "✅ Submitted successfully!";
+      form.reset();
+    } else {
+      status.textContent = "❌ Submission failed";
+    }
+  } catch {
+    status.textContent = "❌ Network error";
+  }
+});
+</script>
+
 </body>
 </html>
