@@ -1,54 +1,24 @@
-// sheets.js – Render-ready version
+// sheets.js — LOCKED FINAL VERSION
 
-const { google } = require("googleapis");
+const fetch = require("node-fetch");
 
-/**
- * Loads OAuth credentials from environment variables
- * (OAUTH_CREDENTIALS_JSON and TOKEN_JSON)
- */
-function getAuth() {
-  if (!process.env.OAUTH_CREDENTIALS_JSON) {
-    throw new Error("Missing OAUTH_CREDENTIALS_JSON env variable.");
-  }
-  if (!process.env.TOKEN_JSON) {
-    throw new Error("Missing TOKEN_JSON env variable.");
-  }
-
-  const credentials = JSON.parse(process.env.OAUTH_CREDENTIALS_JSON);
-  const token = JSON.parse(process.env.TOKEN_JSON);
-
-  const { client_secret, client_id, redirect_uris } = credentials.web;
-
-  const oAuth2Client = new google.auth.OAuth2(
-    client_id,
-    client_secret,
-    redirect_uris[0]
-  );
-
-  oAuth2Client.setCredentials(token);
-  return oAuth2Client;
+if (!process.env.APPS_SCRIPT_URL) {
+  throw new Error("Missing environment variable: APPS_SCRIPT_URL");
 }
 
-/**
- * Appends a row to Google Sheets
- */
-async function appendWarrantyRow(spreadsheetId, rowValues) {
-  const auth = getAuth();
-  const sheets = google.sheets({ version: "v4", auth });
-
-  const response = await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range: "Warranty Lookup!A1",
-    valueInputOption: "RAW",
-    insertDataOption: "INSERT_ROWS",
-    requestBody: {
-      values: [rowValues],
-    },
+async function appendWarrantyRow(row) {
+  const response = await fetch(process.env.APPS_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ row })
   });
 
-  return response.data;
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`Apps Script error: ${text}`);
+  }
+
+  return true;
 }
 
-module.exports = {
-  appendWarrantyRow
-};
+module.exports = { appendWarrantyRow };

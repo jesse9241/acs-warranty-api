@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: system-ui, sans-serif;
       background: #f4f5f7;
       margin: 0;
       padding: 0;
@@ -14,65 +14,101 @@
     .container {
       max-width: 600px;
       margin: 2rem auto;
-      background: #ffffff;
+      background: #fff;
       padding: 1.5rem;
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
-    h1 { margin-top: 0; }
-    label { display: block; margin-top: 0.75rem; font-weight: 600; }
-    input, textarea, select, button {
+    label {
+      display: block;
+      font-weight: 600;
+      margin-top: 0.75rem;
+    }
+    input, textarea, select {
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.25rem;
     }
     button {
       margin-top: 1rem;
+      width: 100%;
+      padding: 0.75rem;
       background: #0b8457;
-      color: white;
+      color: #fff;
       border: none;
+      font-size: 1rem;
       cursor: pointer;
     }
-    .status { margin-top: 1rem; }
+    .status {
+      margin-top: 0.75rem;
+      font-weight: 600;
+    }
+    .ok { color: #0b8457; }
+    .error { color: #c0392b; }
   </style>
 </head>
-<body>
 
+<body>
 <div class="container">
-  <h1>ACS Warranty Claim</h1>
+  <h2>ACS Warranty Claim</h2>
 
   <form id="warranty-form">
     <label>Customer Name *</label>
-    <input name="customerName" required />
+    <input name="customerName" required>
 
     <label>Email *</label>
-    <input name="customerEmail" type="email" required />
+    <input type="email" name="customerEmail" required>
 
-    <label>Order Number *</label>
-    <input name="originalOrderNumber" required />
+    <label>Phone</label>
+    <input name="customerPhone">
 
-    <label>Warranty Number *</label>
-    <input name="originalWarrantyNumber" required />
+    <label>Source *</label>
+    <select name="source" required>
+      <option value="">Select</option>
+      <option>Shopify</option>
+      <option>eBay</option>
+      <option>Other</option>
+    </select>
+
+    <label>Original Order # *</label>
+    <input name="originalOrderNumber" required>
+
+    <label>Original Warranty # *</label>
+    <input name="originalWarrantyNumber" required>
 
     <label>Product *</label>
-    <input name="product" required />
+    <input name="product" required>
+
+    <label>UPC</label>
+    <input name="upc">
 
     <label>Issue *</label>
     <textarea name="issueDescription" required></textarea>
 
-    <button type="submit">Submit Warranty</button>
+    <label>Address</label>
+    <textarea name="customerAddress"></textarea>
+
+    <label>Notes</label>
+    <textarea name="notes"></textarea>
+
+    <button type="submit" id="submitBtn">Submit Warranty</button>
     <div id="status" class="status"></div>
   </form>
 </div>
 
 <script>
-document.getElementById("warranty-form").addEventListener("submit", async (e) => {
+document.getElementById("warranty-form").addEventListener("submit", async e => {
   e.preventDefault();
 
   const form = e.target;
-  const status = document.getElementById("status");
-
   const data = Object.fromEntries(new FormData(form).entries());
+
+  const status = document.getElementById("status");
+  const btn = document.getElementById("submitBtn");
+
+  status.textContent = "";
+  btn.disabled = true;
+  btn.textContent = "Submitting...";
 
   try {
     const res = await fetch("/warranty", {
@@ -84,13 +120,18 @@ document.getElementById("warranty-form").addEventListener("submit", async (e) =>
     const result = await res.json();
 
     if (result.success) {
-      status.textContent = "✅ Submitted successfully!";
+      status.textContent = "✅ Warranty submitted successfully";
+      status.className = "status ok";
       form.reset();
     } else {
-      status.textContent = "❌ Submission failed";
+      throw new Error(result.error || "Submission failed");
     }
-  } catch {
-    status.textContent = "❌ Network error";
+  } catch (err) {
+    status.textContent = "❌ " + err.message;
+    status.className = "status error";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Submit Warranty";
   }
 });
 </script>

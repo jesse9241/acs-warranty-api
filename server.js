@@ -1,8 +1,9 @@
+// server.js — LOCKED FINAL VERSION
+
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
-
 const { appendWarrantyRow } = require("./sheets");
 
 const app = express();
@@ -12,52 +13,56 @@ app.use(express.json());
 
 console.log("🔥 SERVER.JS LOADED");
 
-// ==============================
-// ROOT ROUTE – SERVE THE FORM
-// ==============================
+// ✅ ROOT — SERVE THE FORM
 app.get("/", (req, res) => {
   const filePath = path.join(__dirname, "Public", "index.html");
   console.log("📄 Serving:", filePath);
   res.sendFile(filePath);
 });
 
-// ==============================
-// HEALTH CHECK
-// ==============================
+// ✅ HEALTH CHECK
 app.get("/health", (req, res) => {
   res.send("Server is responding");
 });
 
-// ==============================
-// WARRANTY SUBMISSION
-// ==============================
+// ✅ WARRANTY SUBMISSION
 app.post("/warranty", async (req, res) => {
   try {
     const d = req.body;
 
-    console.log("📨 Warranty received:", d.customerEmail);
+    const row = [
+      "",                             // claimId (auto later)
+      d.source || "",
+      d.customerName || "",
+      d.originalOrderNumber || "",
+      "",
+      d.originalOrderDate || "",
+      d.originalWarrantyNumber || "",
+      "",
+      new Date().toISOString().split("T")[0],
+      "",
+      "",
+      d.product || "",
+      d.issueDescription || "",
+      "",
+      d.upc || "",
+      "",
+      "Submitted",
+      d.customerPhone || "",
+      d.customerEmail || "",
+      d.customerAddress || "",
+      d.notes || ""
+    ];
 
-    // 🔑 IMPORTANT:
-    // We now send RAW FORM DATA to Apps Script
-    await appendWarrantyRow(null, d);
+    await appendWarrantyRow(row);
 
-    res.json({
-      success: true,
-      message: "Warranty submitted successfully"
-    });
-
+    res.json({ success: true });
   } catch (err) {
-    console.error("❌ Warranty error:", err.message);
-    res.status(500).json({
-      success: false,
-      error: err.message
-    });
+    console.error("❌ WARRANTY ERROR:", err);
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// ==============================
-// START SERVER
-// ==============================
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Server listening on port ${PORT}`);
