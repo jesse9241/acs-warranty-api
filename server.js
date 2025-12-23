@@ -3,8 +3,7 @@ const express = require("express");
 const path = require("path");
 const cors = require("cors");
 
-// Node 18+ / Render supports global fetch
-// (no need to import node-fetch)
+const { appendWarrantyRow } = require("./sheets");
 
 const app = express();
 
@@ -13,50 +12,42 @@ app.use(express.json());
 
 console.log("🔥 SERVER.JS LOADED");
 
-// ================================
-// SERVE WARRANTY FORM (ROOT)
-// ================================
+// ==============================
+// ROOT ROUTE – SERVE THE FORM
+// ==============================
 app.get("/", (req, res) => {
   const filePath = path.join(__dirname, "Public", "index.html");
-  console.log("📄 Serving file:", filePath);
+  console.log("📄 Serving:", filePath);
   res.sendFile(filePath);
 });
 
-// ================================
+// ==============================
 // HEALTH CHECK
-// ================================
+// ==============================
 app.get("/health", (req, res) => {
   res.send("Server is responding");
 });
 
-// ================================
-// WARRANTY SUBMISSION ROUTE
-// ================================
+// ==============================
+// WARRANTY SUBMISSION
+// ==============================
 app.post("/warranty", async (req, res) => {
   try {
-    if (!process.env.APPS_SCRIPT_URL) {
-      throw new Error("Missing APPS_SCRIPT_URL environment variable");
-    }
+    const d = req.body;
 
-    const payload = req.body;
+    console.log("📨 Warranty received:", d.customerEmail);
 
-    const response = await fetch(process.env.APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
+    // 🔑 IMPORTANT:
+    // We now send RAW FORM DATA to Apps Script
+    await appendWarrantyRow(null, d);
+
+    res.json({
+      success: true,
+      message: "Warranty submitted successfully"
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Apps Script error: ${text}`);
-    }
-
-    res.json({ success: true });
-
   } catch (err) {
-    console.error("❌ Warranty submission failed:", err.message);
+    console.error("❌ Warranty error:", err.message);
     res.status(500).json({
       success: false,
       error: err.message
@@ -64,11 +55,10 @@ app.post("/warranty", async (req, res) => {
   }
 });
 
-// ================================
+// ==============================
 // START SERVER
-// ================================
+// ==============================
 const PORT = process.env.PORT || 4000;
-
 app.listen(PORT, () => {
   console.log(`🚀 Server listening on port ${PORT}`);
 });
