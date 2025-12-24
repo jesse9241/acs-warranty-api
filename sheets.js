@@ -1,13 +1,17 @@
-// sheets.js
-const fetch = require("node-fetch");
-const { google } = require("googleapis");
+// sheets.js — FINAL, Render-safe, Node 18+
 
 async function appendWarrantyRow(data) {
-  if (!process.env.APPS_SCRIPT_URL) {
-    throw new Error("Missing APPS_SCRIPT_URL environment variable");
+  const scriptUrl = process.env.APPS_SCRIPT_URL;
+
+  // 🔒 Hard validation (prevents silent failures forever)
+  if (!scriptUrl || !scriptUrl.startsWith("https://")) {
+    throw new Error(
+      "APPS_SCRIPT_URL is missing or invalid. It must start with https://"
+    );
   }
 
-  const response = await fetch(process.env.APPS_SCRIPT_URL, {
+  // ✅ Node 18+ global fetch (NO node-fetch import)
+  const response = await fetch(scriptUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(data)
