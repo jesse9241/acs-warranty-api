@@ -97,44 +97,61 @@
 </div>
 
 <script>
-document.getElementById("warranty-form").addEventListener("submit", async e => {
+document.getElementById("warranty-form").addEventListener("submit", async function (e) {
   e.preventDefault();
 
   const form = e.target;
-  const data = Object.fromEntries(new FormData(form).entries());
 
-  const status = document.getElementById("status");
-  const btn = document.getElementById("submitBtn");
+  const data = {
+    source: form.source.value,
+    customerName: form.customerName.value,
+    originalOrderNumber: form.originalOrderNumber.value,
+    originalWarrantyNumber: form.originalWarrantyNumber.value,
+    product: form.product.value,
+    issueDescription: form.issueDescription.value,
+    customerEmail: form.customerEmail.value,
+    customerPhone: form.customerPhone.value || "",
+    customerAddress: form.customerAddress.value || "",
+    notes: form.notes.value || ""
+  };
 
-  status.textContent = "";
-  btn.disabled = true;
-  btn.textContent = "Submitting...";
+  const API_URL =
+    location.hostname === "localhost"
+      ? "http://localhost:4000/warranty"
+      : "https://acs-warranty-api.onrender.com/warranty";
+
+  const statusEl = document.getElementById("status");
+  statusEl.textContent = "Submitting…";
 
   try {
-    const res = await fetch("/warranty", {
+    const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
 
-    const result = await res.json();
+    // 👇 IMPORTANT SAFETY CHECK
+    if (!response.headers.get("content-type")?.includes("application/json")) {
+      const text = await response.text();
+      throw new Error("Server did not return JSON:\n" + text);
+    }
+
+    const result = await response.json();
 
     if (result.success) {
-      status.textContent = "✅ Warranty submitted successfully";
-      status.className = "status ok";
+      statusEl.textContent = "✅ Warranty submitted successfully";
       form.reset();
     } else {
-      throw new Error(result.error || "Submission failed");
+      statusEl.textContent = "❌ Submission failed";
     }
+
   } catch (err) {
-    status.textContent = "❌ " + err.message;
-    status.className = "status error";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Submit Warranty";
+    console.error(err);
+    statusEl.textContent = "❌ " + err.message;
   }
 });
 </script>
+
 
 </body>
 </html>
