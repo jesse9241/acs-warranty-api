@@ -1,9 +1,9 @@
-console.log("🟢 Node version:", process.version);
-
 require("dotenv").config();
 const express = require("express");
 const path = require("path");
 const cors = require("cors");
+
+const { appendWarrantyRow } = require("./sheets");
 
 const app = express();
 
@@ -12,67 +12,59 @@ app.use(express.json());
 
 console.log("🔥 SERVER.JS LOADED");
 
-/**
- * ============================
- * STATIC FORM (ROOT)
- * ============================
- * This serves Public/index.html
- * at https://acs-warranty-api.onrender.com/
- */
+// ✅ SERVE FORM
 app.get("/", (req, res) => {
   const filePath = path.join(__dirname, "Public", "index.html");
   console.log("📄 Serving:", filePath);
   res.sendFile(filePath);
 });
 
-/**
- * ============================
- * HEALTH CHECK
- * ============================
- */
+// ✅ HEALTH CHECK
 app.get("/health", (req, res) => {
-  res.json({ ok: true, status: "Server is responding" });
+  res.json({ ok: true });
 });
 
-/**
- * ============================
- * WARRANTY SUBMIT
- * ============================
- * Receives form JSON
- * Forwards directly to Apps Script
- */
-app.post("/submit", async (req, res) => {
+// ✅ ***THIS IS THE CRITICAL ROUTE***
+app.post("/warranty", async (req, res) => {
+  console.log("📨 Warranty received:", req.body.customerEmail);
+
   try {
-    if (!process.env.APPS_SCRIPT_URL) {
-      throw new Error("Missing APPS_SCRIPT_URL env variable");
-    }
+    const d = req.body;
 
-    console.log("📨 Warranty received:", req.body.customerEmail);
+    const row = [
+      "",
+      d.source || "",
+      d.customerName || "",
+      d.originalOrderNumber || "",
+      "",
+      "",
+      d.originalWarrantyNumber || "",
+      "",
+      new Date().toISOString().split("T")[0],
+      "",
+      "",
+      d.product || "",
+      d.issueDescription || "",
+      "",
+      "",
+      "",
+      "Submitted",
+      d.customerPhone || "",
+      d.customerEmail || "",
+      d.customerAddress || "",
+      d.notes || ""
+    ];
 
-    const response = await fetch(process.env.APPS_SCRIPT_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(req.body)
-    });
-
-    if (!response.ok) {
-      const text = await response.text();
-      throw new Error(`Apps Script error: ${text}`);
-    }
+    await appendWarrantyRow(process.env.GOOGLE_SHEET_ID, row);
 
     res.json({ success: true });
 
   } catch (err) {
-    console.error("❌ Warranty error:", err.message);
+    console.error("❌ Warranty error:", err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-/**
- * ============================
- * START SERVER
- * ============================
- */
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Server listening on port ${PORT}`);
