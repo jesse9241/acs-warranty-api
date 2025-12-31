@@ -38,7 +38,9 @@ app.post("/warranty", async (req, res) => {
     console.log("📨 Warranty received:", data.customerEmail);
 
     // 🔥 SEND FULL OBJECT TO APPS SCRIPT
-    await appendWarrantyRow(data);
+    const result = await appendWarrantyRow(data);
+console.log("Apps Script response:", result);
+
 
     res.json({ success: true });
 
