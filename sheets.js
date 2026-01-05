@@ -9,13 +9,16 @@ async function appendWarrantyRow(data) {
       "APPS_SCRIPT_URL is missing or invalid. It must start with https://"
     );
   }
+console.log("Posting to Apps Script URL:", process.env.APPS_SCRIPT_URL);
 
-  // ✅ Node 18+ global fetch (NO node-fetch import)
-  const response = await fetch(scriptUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data)
-  });
+const response = await fetch(process.env.APPS_SCRIPT_URL, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(payload)
+});
+
 
   if (!response.ok) {
     const text = await response.text();
