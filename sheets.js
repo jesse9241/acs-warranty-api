@@ -1,24 +1,21 @@
-// sheets.js — FINAL, Render-safe, Node 18+
-
 async function appendWarrantyRow(data) {
   const scriptUrl = process.env.APPS_SCRIPT_URL;
 
-  // 🔒 Hard validation (prevents silent failures forever)
   if (!scriptUrl || !scriptUrl.startsWith("https://")) {
     throw new Error(
       "APPS_SCRIPT_URL is missing or invalid. It must start with https://"
     );
   }
-console.log("Posting to Apps Script URL:", process.env.APPS_SCRIPT_URL);
 
-const response = await fetch(process.env.APPS_SCRIPT_URL, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify(payload)
-});
+  console.log("Posting to Apps Script URL:", scriptUrl);
 
+  const response = await fetch(scriptUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(data) // ✅ FIX
+  });
 
   if (!response.ok) {
     const text = await response.text();
