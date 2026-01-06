@@ -43,8 +43,6 @@
       margin-top: 0.75rem;
       font-weight: 600;
     }
-    .ok { color: #0b8457; }
-    .error { color: #c0392b; }
   </style>
 </head>
 
@@ -53,6 +51,7 @@
   <h2>ACS Warranty Claim</h2>
 
   <form id="warranty-form">
+
     <label>Customer Name *</label>
     <input name="customerName" required>
 
@@ -74,12 +73,17 @@
     <input name="originalOrderNumber" required>
 
     <label>Original Warranty # *</label>
-<input name="originalWarrantyNumber" required>
-<small id="warranty-autofill-msg" style="display:none; color:#0b8457;">
-  ✔ Warranty number loaded from scan
-</small>
+    <input name="originalWarrantyNumber" required>
 
+    <small id="warranty-autofill-msg" style="display:none; color:#0b8457;">
+      ✔ Warranty number loaded from scan
+    </small>
 
+    <small id="warranty-duplicate-msg"
+           style="display:none; color:#b45309; background:#fff7ed;
+                  padding:4px 6px; border-radius:4px; margin-top:4px; display:inline-block;">
+      ⚠ Multiple existing warranties found. First match loaded — please review.
+    </small>
 
     <label>Product *</label>
     <input name="product" required>
@@ -96,11 +100,13 @@
     <label>Notes</label>
     <textarea name="notes"></textarea>
 
-    <button type="submit" id="submitBtn">Submit Warranty</button>
-    <div id="status" class="status"></div>
+    <button type="submit">Submit Warranty</button>
   </form>
 </div>
 
+<!-- ============================
+     SUBMIT HANDLER
+============================ -->
 <script>
 document.getElementById("warranty-form").addEventListener("submit", async function (e) {
   e.preventDefault();
@@ -123,31 +129,58 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
   try {
     const response = await fetch("https://acs-warranty-api.onrender.com/warranty", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data)
     });
 
     if (!response.ok) {
-      const text = await response.text();
-      throw new Error(text);
+      throw new Error(await response.text());
     }
 
-    // ✅ ONLY show success after POST succeeds
-    document.getElementById("success-message").style.display = "block";
+    alert("Warranty submitted successfully.");
     form.reset();
 
   } catch (err) {
-    console.error("Submission failed:", err);
+    console.error(err);
     alert("Submission failed. Please try again.");
   }
 });
 </script>
 
+<!-- ============================
+     AUTO-FILL + LOOKUP
+============================ -->
 <script>
   const params = new URLSearchParams(window.location.search);
   const warrantyNumber = params.get("warranty");
+
+  async function lookupWarranty(warranty) {
+    try {
+      const res = await fetch(`/warranty/${encodeURIComponent(warranty)}`);
+      const data = await res.json();
+
+      if (!data.found) return;
+
+      if (data.customerName)
+        document.querySelector('input[name="customerName"]').value = data.customerName;
+
+      if (data.customerEmail)
+        document.querySelector('input[name="customerEmail"]').value = data.customerEmail;
+
+      if (data.customerPhone)
+        document.querySelector('input[name="customerPhone"]').value = data.customerPhone;
+
+      if (data.product)
+        document.querySelector('input[name="product"]').value = data.product;
+
+      if (data.duplicateCount > 1) {
+        const dupMsg = document.getElementById("warranty-duplicate-msg");
+        if (dupMsg) dupMsg.style.display = "block";
+      }
+    } catch (err) {
+      console.warn("Warranty lookup failed");
+    }
+  }
 
   if (warrantyNumber) {
     const field = document.querySelector('input[name="originalWarrantyNumber"]');
@@ -159,17 +192,12 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
       field.readOnly = true;
     }
 
-    if (msg) {
-      msg.style.display = "block";
-    }
+    if (msg) msg.style.display = "block";
+    if (nextField) nextField.focus();
 
-    if (nextField) {
-      nextField.focus();
-    }
+    lookupWarranty(warrantyNumber);
   }
 </script>
-
-
 
 </body>
 </html>
