@@ -2,7 +2,6 @@
  * ACS Warranty API — server.js
  * Node 18+, Render-compatible
  ************************************************************/
-console.log("🔥 SERVER.JS LOADED");
 
 const express = require("express");
 const fetch = require("node-fetch");
@@ -21,8 +20,6 @@ app.use(express.static("Public"));
 /************************************************************
  * SMTP (GMAIL APP PASSWORD)
  ************************************************************/
-console.log("📧 Initializing SMTP transport");
-
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -32,11 +29,11 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS
   }
 });
-transporter.verify((error, success) => {
+
+// Quiet safety check (logs only if broken)
+transporter.verify((error) => {
   if (error) {
-    console.error("❌ SMTP VERIFY FAILED:", error);
-  } else {
-    console.log("✅ SMTP SERVER READY");
+    console.error("SMTP initialization failed:", error);
   }
 });
 
@@ -71,8 +68,6 @@ ${data.issueDescription || ""}
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
-    console.log("📨 Warranty received:", req.body.customerEmail);
-
     const appsScriptRes = await fetch(process.env.APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -84,19 +79,15 @@ app.post("/warranty", async (req, res) => {
       throw new Error(`Apps Script error: ${text}`);
     }
 
-    const result = await appsScriptRes.json();
-    console.log("📄 Sheet write OK:", result);
+    await appsScriptRes.json();
 
-    // ✅ SEND EMAIL AFTER SHEET WRITE
-    console.log("📧 About to send warranty email");
+    // Send email AFTER sheet write succeeds
     await sendWarrantyEmail(req.body);
-    console.log("📧 Warranty email send completed");
-    console.log("📧 Warranty email sent");
 
     res.json({ status: "ok" });
 
   } catch (err) {
-    console.error("❌ Warranty error:", err);
+    console.error("Warranty submission failed:", err);
     res.status(500).json({ status: "error", message: err.message });
   }
 });
@@ -105,5 +96,5 @@ app.post("/warranty", async (req, res) => {
  * SERVER START
  ************************************************************/
 app.listen(PORT, () => {
-  console.log("🚀 Server listening on port", PORT);
+  console.log("ACS Warranty API running on port", PORT);
 });
