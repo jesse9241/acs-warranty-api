@@ -2,6 +2,7 @@
  * ACS Warranty API — server.js
  * Node 18+, Render-compatible
  ************************************************************/
+console.log("🔥 SERVER.JS LOADED");
 
 const express = require("express");
 const fetch = require("node-fetch");
@@ -20,6 +21,8 @@ app.use(express.static("Public"));
 /************************************************************
  * SMTP (GMAIL APP PASSWORD)
  ************************************************************/
+console.log("📧 Initializing SMTP transport");
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: Number(process.env.SMTP_PORT),
@@ -85,7 +88,9 @@ app.post("/warranty", async (req, res) => {
     console.log("📄 Sheet write OK:", result);
 
     // ✅ SEND EMAIL AFTER SHEET WRITE
+    console.log("📧 About to send warranty email");
     await sendWarrantyEmail(req.body);
+    console.log("📧 Warranty email send completed");
     console.log("📧 Warranty email sent");
 
     res.json({ status: "ok" });
