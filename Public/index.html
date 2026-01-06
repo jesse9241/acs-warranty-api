@@ -115,41 +115,42 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
     notes: form.notes.value || ""
   };
 
-  const API_URL =
-    location.hostname === "localhost"
-      ? "http://localhost:4000/warranty"
-      : "https://acs-warranty-api.onrender.com/warranty";
-
-  const statusEl = document.getElementById("status");
-  statusEl.textContent = "Submitting…";
-
   try {
-    const response = await fetch(API_URL, {
+    const response = await fetch("https://acs-warranty-api.onrender.com/warranty", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify(data)
     });
 
-    // 👇 IMPORTANT SAFETY CHECK
-    if (!response.headers.get("content-type")?.includes("application/json")) {
+    if (!response.ok) {
       const text = await response.text();
-      throw new Error("Server did not return JSON:\n" + text);
+      throw new Error(text);
     }
 
-    const result = await response.json();
-
-    if (result.success) {
-      statusEl.textContent = "✅ Warranty submitted successfully";
-      form.reset();
-    } else {
-      statusEl.textContent = "❌ Submission failed";
-    }
+    // ✅ ONLY show success after POST succeeds
+    document.getElementById("success-message").style.display = "block";
+    form.reset();
 
   } catch (err) {
-    console.error(err);
-    statusEl.textContent = "❌ " + err.message;
+    console.error("Submission failed:", err);
+    alert("Submission failed. Please try again.");
   }
 });
+</script>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const warrantyNumber = params.get("warranty");
+
+  if (warrantyNumber) {
+    const field = document.querySelector('input[name="originalWarrantyNumber"]');
+    if (field) {
+      field.value = warrantyNumber;
+      field.readOnly = true; // optional
+    }
+  }
 </script>
 
 
