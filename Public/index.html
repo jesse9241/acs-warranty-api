@@ -80,6 +80,7 @@
 </small>
 
 
+
     <label>Product *</label>
     <input name="product" required>
 
@@ -150,9 +151,15 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
 
   if (warrantyNumber) {
     const field = document.querySelector('input[name="originalWarrantyNumber"]');
+    const msg = document.getElementById("warranty-autofill-msg");
+
     if (field) {
       field.value = warrantyNumber;
-      field.readOnly = true; // optional
+      field.readOnly = true;
+    }
+
+    if (msg) {
+      msg.style.display = "block";
     }
   }
 </script>
