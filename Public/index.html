@@ -152,6 +152,7 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
   if (warrantyNumber) {
     const field = document.querySelector('input[name="originalWarrantyNumber"]');
     const msg = document.getElementById("warranty-autofill-msg");
+    const nextField = document.querySelector('input[name="customerName"]');
 
     if (field) {
       field.value = warrantyNumber;
@@ -161,8 +162,13 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
     if (msg) {
       msg.style.display = "block";
     }
+
+    if (nextField) {
+      nextField.focus();
+    }
   }
 </script>
+
 
 
 </body>
