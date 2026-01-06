@@ -83,6 +83,36 @@ app.post("/warranty", async (req, res) => {
 
     // Send email AFTER sheet write succeeds
     await sendWarrantyEmail(req.body);
+    await sendCustomerConfirmationEmail(req.body);
+
+    async function sendCustomerConfirmationEmail(data) {
+  if (!data.customerEmail) return; // safety
+
+  await transporter.sendMail({
+    from: `"ACS Warranty" <${process.env.SMTP_USER}>`,
+    to: data.customerEmail,
+    subject: "We received your warranty claim",
+    text: `
+Hello ${data.customerName || ""},
+
+We’ve received your warranty claim and our team will review it shortly.
+
+Here are the details we received:
+
+Order #: ${data.originalOrderNumber || ""}
+Warranty #: ${data.originalWarrantyNumber || ""}
+Product: ${data.product || ""}
+
+Issue:
+${data.issueDescription || ""}
+
+If any of this looks incorrect, please reply to this email.
+
+Thank you,
+Automotive Circuit Solutions
+`
+  });
+}
 
     res.json({ status: "ok" });
 
