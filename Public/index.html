@@ -39,6 +39,11 @@
       font-size: 1rem;
       cursor: pointer;
     }
+    .hint {
+      color: #0b8457;
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
   </style>
 </head>
 
@@ -62,24 +67,18 @@
       <option value="">Select</option>
       <option>Shopify</option>
       <option>eBay</option>
+      <option>Walk-in</option>
       <option>Other</option>
     </select>
 
     <label>Original Order # *</label>
     <input name="originalOrderNumber" required>
+    <div id="order-autofill-msg" class="hint" style="display:none;">
+      ✔ Order number loaded from scan
+    </div>
 
-    <label>Original Warranty # *</label>
-    <input name="originalWarrantyNumber" required>
-
-    <small id="warranty-autofill-msg" style="display:none; color:#0b8457;">
-      ✔ Warranty number loaded from scan
-    </small>
-
-    <small id="warranty-duplicate-msg"
-           style="display:none; color:#b45309; background:#fff7ed;
-                  padding:4px 6px; border-radius:4px; margin-top:4px; display:inline-block;">
-      ⚠ Multiple existing warranties found. First match loaded — please review.
-    </small>
+    <label>Original Warranty #</label>
+    <input name="originalWarrantyNumber">
 
     <label>Product *</label>
     <input name="product" required>
@@ -101,7 +100,7 @@
 </div>
 
 <!-- ============================
-     SUBMIT HANDLER (OPTION A)
+     FORM SUBMIT
 ============================ -->
 <script>
 document.getElementById("warranty-form").addEventListener("submit", async function (e) {
@@ -109,92 +108,81 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
 
   const form = e.target;
 
-  const data = {
+  const payload = {
     source: form.source.value,
     customerName: form.customerName.value,
-    originalOrderNumber: form.originalOrderNumber.value,
-    originalWarrantyNumber: form.originalWarrantyNumber.value,
-    product: form.product.value,
-    issueDescription: form.issueDescription.value,
     customerEmail: form.customerEmail.value,
     customerPhone: form.customerPhone.value || "",
+    originalOrderNumber: form.originalOrderNumber.value,
+    originalWarrantyNumber: form.originalWarrantyNumber.value || "",
+    product: form.product.value,
+    issueDescription: form.issueDescription.value,
     customerAddress: form.customerAddress.value || "",
     notes: form.notes.value || ""
   };
 
   try {
-    const response = await fetch("https://acs-warranty-api.onrender.com/warranty", {
+    const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(payload)
     });
 
-    if (!response.ok) {
-      const text = await response.text();
-      console.error("Server response:", text);
-      throw new Error("Backend error");
-    }
+    if (!res.ok) throw new Error("Submission failed");
 
     alert("Warranty submitted successfully.");
     form.reset();
 
   } catch (err) {
-    console.error(err);
     alert("Submission failed. Please try again.");
   }
 });
 </script>
 
 <!-- ============================
-     AUTO-FILL + LOOKUP
+     QR AUTOFILL + LOOKUP
 ============================ -->
 <script>
-  const params = new URLSearchParams(window.location.search);
-  const warrantyNumber = params.get("warranty");
+const params = new URLSearchParams(window.location.search);
+const orderNumber = params.get("order");
 
-  async function lookupWarranty(warranty) {
-    try {
-      const res = await fetch(`/warranty/${encodeURIComponent(warranty)}`);
-      const data = await res.json();
+async function lookupByOrder(order) {
+  try {
+    const res = await fetch(`/warranty/${encodeURIComponent(order)}`);
+    const data = await res.json();
 
-      if (!data.found) return;
+    if (!data.found) return;
 
-      if (data.customerName)
-        document.querySelector('input[name="customerName"]').value = data.customerName;
+    if (data.customerName)
+      document.querySelector('input[name="customerName"]').value = data.customerName;
 
-      if (data.customerEmail)
-        document.querySelector('input[name="customerEmail"]').value = data.customerEmail;
+    if (data.customerEmail)
+      document.querySelector('input[name="customerEmail"]').value = data.customerEmail;
 
-      if (data.customerPhone)
-        document.querySelector('input[name="customerPhone"]').value = data.customerPhone;
+    if (data.customerPhone)
+      document.querySelector('input[name="customerPhone"]').value = data.customerPhone;
 
-      if (data.product)
-        document.querySelector('input[name="product"]').value = data.product;
+    if (data.product)
+      document.querySelector('input[name="product"]').value = data.product;
 
-      if (data.duplicateCount > 1) {
-        const dupMsg = document.getElementById("warranty-duplicate-msg");
-        if (dupMsg) dupMsg.style.display = "block";
-      }
-    } catch (err) {
-      console.warn("Warranty lookup failed");
-    }
+  } catch {
+    // silent fail for customers
+  }
+}
+
+if (orderNumber) {
+  const field = document.querySelector('input[name="originalOrderNumber"]');
+  const msg = document.getElementById("order-autofill-msg");
+
+  if (field) {
+    field.value = orderNumber;
+    field.readOnly = true;
   }
 
-  if (warrantyNumber) {
-    const field = document.querySelector('input[name="originalWarrantyNumber"]');
-    const msg = document.getElementById("warranty-autofill-msg");
-    const nextField = document.querySelector('input[name="customerName"]');
+  if (msg) msg.style.display = "block";
 
-    if (field) {
-      field.value = warrantyNumber;
-      field.readOnly = true;
-    }
-
-    if (msg) msg.style.display = "block";
-    if (nextField) nextField.focus();
-
-    lookupWarranty(warrantyNumber);
-  }
+  lookupByOrder(orderNumber);
+}
 </script>
 
 </body>
