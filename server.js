@@ -29,6 +29,13 @@ const transporter = nodemailer.createTransport({
     pass: process.env.SMTP_PASS
   }
 });
+transporter.verify((error, success) => {
+  if (error) {
+    console.error("❌ SMTP VERIFY FAILED:", error);
+  } else {
+    console.log("✅ SMTP SERVER READY");
+  }
+});
 
 /************************************************************
  * EMAIL HELPER
