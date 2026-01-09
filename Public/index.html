@@ -1,152 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <title>ACS Warranty Claim</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f4f5f7;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-    label {   
-      display: block;
-      font-weight: 600;
-      margin-top: 0.75rem;
-    }
-    input, textarea, select {
-      width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.25rem;
-    }
-    button {
-      padding: 0.6rem 0.9rem;
-      background: #0b8457;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-size: 0.95rem;
-    }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .hint {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 0.25rem;
-    }
-  </style>
-</head>
-
-<body>
-<div class="container">
-
-  <!-- LOGO (LOCAL, NON-DISTORTING) -->
-  <div style="text-align:center; margin-bottom:1.25rem;">
-    <img
-      src="/logo.png"
-      alt="Automotive Circuit Solutions"
-      style="
-        max-width:260px;
-        width:100%;
-        height:auto;
-        display:block;
-        margin:0 auto;
-      "
-    />
-  </div>
-
-  <h2 style="text-align:center; margin-top:0;">
-    Warranty Claim
-  </h2>
-
-  <form id="warranty-form">
-
-    <label>Customer Name *</label>
-    <input name="customerName" required>
-
-    <label>Email *</label>
-    <input type="email" name="customerEmail" required>
-
-    <label>Phone</label>
-    <input name="customerPhone">
-
-    <label>Source *</label>
-    <select name="source" required>
-      <option value="">Select</option>
-      <option>Shopify</option>
-      <option>eBay</option>
-      <option>Walk-in</option>
-      <option>Other</option>
-    </select>
-
-    <label>Original Order # *</label>
-    <div class="row">
-      <input name="originalOrderNumber" required>
-      <button type="button" id="lookupBtn">Lookup</button>
-    </div>
-    <div class="hint">
-      Receiving: scan or enter Order #, then click Lookup
-    </div>
-
-    <label>Original Warranty #</label>
-    <input name="originalWarrantyNumber">
-
-    <label>Product *</label>
-    <input name="product" required>
-
-    <label>UPC</label>
-    <input name="upc">
-
-    <label>Issue *</label>
-    <textarea name="issueDescription" required></textarea>
-
-    <label>Address</label>
-    <textarea name="customerAddress"></textarea>
-
-    <label>Notes</label>
-    <textarea name="notes"></textarea>
-
-    <button type="submit" style="margin-top:1rem; width:100%;">
-      Submit Warranty
-    </button>
-
-  </form>
-</div>
-
-<!-- ============================
-     SUBMIT (WRITE)
-============================ -->
 <script>
 document.getElementById("warranty-form").addEventListener("submit", async function (e) {
   e.preventDefault();
-  console.log("UPC SENT:", form.upc.value);
-  const form = e.target;
+
+  const form = e.target; // ✅ define FIRST
+
+  console.log("UPC SENT:", form.upc.value); // now safe
+
   const payload = {
-  source: form.source.value,
-  customerName: form.customerName.value,
-  customerEmail: form.customerEmail.value,
-  customerPhone: form.customerPhone.value || "",
-  originalOrderNumber: form.originalOrderNumber.value,
-  originalWarrantyNumber: form.originalWarrantyNumber.value || "",
-  product: form.product.value,
-  upc: form.upc.value || "",              // ✅ FIX
-  issueDescription: form.issueDescription.value,
-  customerAddress: form.customerAddress.value || "",
-  notes: form.notes.value || ""
-};
+    source: form.source.value,
+    customerName: form.customerName.value,
+    customerEmail: form.customerEmail.value,
+    customerPhone: form.customerPhone.value || "",
+    originalOrderNumber: form.originalOrderNumber.value,
+    originalWarrantyNumber: form.originalWarrantyNumber.value || "",
+    product: form.product.value,
+    upc: form.upc.value || "",   // ✅ UPC INCLUDED
+    issueDescription: form.issueDescription.value,
+    customerAddress: form.customerAddress.value || "",
+    notes: form.notes.value || ""
+  };
 
   try {
     const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
@@ -160,54 +32,9 @@ document.getElementById("warranty-form").addEventListener("submit", async functi
     alert("Warranty submitted successfully.");
     form.reset();
 
-  } catch {
+  } catch (err) {
+    console.error(err);
     alert("Submission failed. Please try again.");
   }
 });
 </script>
-
-<!-- ============================
-     LOOKUP (READ-ONLY)
-============================ -->
-<script>
-document.getElementById("lookupBtn").addEventListener("click", async function () {
-  const orderField = document.querySelector('input[name="originalOrderNumber"]');
-  const order = orderField.value.trim();
-
-  if (!order) {
-    alert("Please enter or scan an Order # first.");
-    return;
-  }
-
-  try {
-    const res = await fetch(`/warranty/${encodeURIComponent(order)}`);
-    const data = await res.json();
-
-    if (!data.found) {
-      alert("No warranty found for this Order #.");
-      return;
-    }
-
-    if (data.customerName)
-      document.querySelector('input[name="customerName"]').value = data.customerName;
-
-    if (data.customerEmail)
-      document.querySelector('input[name="customerEmail"]').value = data.customerEmail;
-
-    if (data.customerPhone)
-      document.querySelector('input[name="customerPhone"]').value = data.customerPhone;
-
-    if (data.product)
-      document.querySelector('input[name="product"]').value = data.product;
-
-    if (data.issueDescription)
-      document.querySelector('textarea[name="issueDescription"]').value = data.issueDescription;
-
-  } catch {
-    alert("Lookup failed. Please try again.");
-  }
-});
-</script>
-
-</body>
-</html>
