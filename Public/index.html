@@ -19,7 +19,7 @@
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
-    label {
+    label {   
       display: block;
       font-weight: 600;
       margin-top: 0.75rem;
@@ -132,21 +132,21 @@
 <script>
 document.getElementById("warranty-form").addEventListener("submit", async function (e) {
   e.preventDefault();
-
+  console.log("UPC SENT:", form.upc.value);
   const form = e.target;
-
   const payload = {
-    source: form.source.value,
-    customerName: form.customerName.value,
-    customerEmail: form.customerEmail.value,
-    customerPhone: form.customerPhone.value || "",
-    originalOrderNumber: form.originalOrderNumber.value,
-    originalWarrantyNumber: form.originalWarrantyNumber.value || "",
-    product: form.product.value,
-    issueDescription: form.issueDescription.value,
-    customerAddress: form.customerAddress.value || "",
-    notes: form.notes.value || ""
-  };
+  source: form.source.value,
+  customerName: form.customerName.value,
+  customerEmail: form.customerEmail.value,
+  customerPhone: form.customerPhone.value || "",
+  originalOrderNumber: form.originalOrderNumber.value,
+  originalWarrantyNumber: form.originalWarrantyNumber.value || "",
+  product: form.product.value,
+  upc: form.upc.value || "",              // ✅ FIX
+  issueDescription: form.issueDescription.value,
+  customerAddress: form.customerAddress.value || "",
+  notes: form.notes.value || ""
+};
 
   try {
     const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
