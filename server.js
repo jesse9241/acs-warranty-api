@@ -15,6 +15,24 @@ const PORT = process.env.PORT || 4000;
  ************************************************************/
 app.use(express.json());
 app.use(express.static("Public"));
+/************************************************************
+ * DEBUG ROUTES (TEMP)
+ ************************************************************/
+app.get("/__routes", (req, res) => {
+  const routes = [];
+
+  app._router.stack.forEach((layer) => {
+    if (layer.route && layer.route.path) {
+      const methods = Object.keys(layer.route.methods)
+        .filter((m) => layer.route.methods[m])
+        .map((m) => m.toUpperCase())
+        .join(",");
+      routes.push(`${methods} ${layer.route.path}`);
+    }
+  });
+
+  res.json({ routes });
+});
 
 /************************************************************
  * SMTP
@@ -50,6 +68,33 @@ app.post("/warranty", async (req, res) => {
     res.json({ status: "ok" });
   } catch (err) {
     console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/************************************************************
+ * 🆕 RECEIVING INTAKE ENDPOINT (PHASE 2)
+ * This writes a new "receiving" row into the sheet via Apps Script.
+ ************************************************************/
+app.post("/receiving", async (req, res) => {
+  try {
+    const payload = {
+      action: "receivingIntake",
+      ...req.body
+    };
+
+    const r = await fetch(process.env.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    if (!r.ok) throw new Error(await r.text());
+    const result = await r.json();
+
+    res.json({ status: "ok", result });
+  } catch (err) {
+    console.error("RECEIVING ERROR:", err.message);
     res.status(500).json({ error: err.message });
   }
 });
