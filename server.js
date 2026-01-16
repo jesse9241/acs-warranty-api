@@ -15,6 +15,11 @@ const PORT = process.env.PORT || 4000;
  ************************************************************/
 app.use(express.json());
 app.use(express.static("Public"));
+
+app.get("/ping", (req, res) => {
+  res.send("PING OK - " + new Date().toISOString());
+});
+
 /************************************************************
  * DEBUG ROUTES (TEMP)
  ************************************************************/
