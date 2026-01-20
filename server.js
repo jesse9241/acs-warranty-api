@@ -174,7 +174,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
       return res.status(500).json({
         status: "error",
         message: "Phase 2 Apps Script did not return JSON (likely permission/login page).",
-        preview: text.slice(0, 300)
+        preview: text.slice(0, 2000)
       });
     }
   } catch (err) {
