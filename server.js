@@ -54,7 +54,7 @@ app.get("/ping", (req, res) => {
  * INTERNAL LOGIN HELPER (TEMP)
  * Visit once in browser:
  *   /internal/login
- * Then you can access /internal/intake without ModHeader.
+ * Then you can access /internal/* pages without ModHeader.
  ************************************************************/
 app.get("/internal/login", (req, res) => {
   res.setHeader(
@@ -160,10 +160,6 @@ app.post("/warranty", async (req, res) => {
  * Requires env vars:
  *   PHASE2_SCRIPT_URL
  *   PHASE2_KEY
- *
- * Request example:
- *   POST /internal/api/phase2
- *   Body: { action:"lookup", originalOrderNumber:"335508" }
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -195,7 +191,6 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL INTAKE PAGE
- * GET /internal/intake
  ************************************************************/
 app.get("/internal/intake", requireInternal, (req, res) => {
   res.send(`
@@ -313,8 +308,87 @@ app.get("/internal/intake", requireInternal, (req, res) => {
 });
 
 /************************************************************
- * SERVER START
+ * PHASE 2 INTERNAL PRODUCTION PAGE (STEP 13)
  ************************************************************/
-app.listen(PORT, () => {
-  console.log("🚀 ACS Warranty API running on port", PORT);
-});
+app.get("/internal/production", requireInternal, (req, res) => {
+  res.send(`
+    <html>
+      <head>
+        <title>ACS Warranty Production</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+          input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
+          .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
+          .ok { color: green; }
+          .err { color: red; }
+          .small { color: #666; font-size: 12px; margin-top: 6px; }
+        </style>
+      </head>
+      <body>
+        <h2>ACS Warranty – Production</h2>
+        <p class="small">
+          Step 1: Lookup by <b>Original Order #</b><br/>
+          Step 2: Update <b>Production Stage</b>
+        </p>
+
+        <label>Original Order #</label>
+        <input id="order" placeholder="Enter order number" />
+
+        <button onclick="lookup()">Lookup</button>
+
+        <div id="result" class="row" style="display:none;">
+          <div><b>Row:</b> <span id="rowNum"></span></div>
+          <div><b>Status:</b> <span id="status"></span></div>
+
+          <hr/>
+
+          <label>Production Stage</label>
+          <select id="productionStage">
+            <option value="">(blank)</option>
+            <option>Queued</option>
+            <option>In Progress</option>
+            <option>Complete</option>
+          </select>
+
+          <button onclick="save()">Save Production Stage</button>
+
+          <div id="msg"></div>
+        </div>
+
+        <script>
+          let currentRow = null;
+
+          async function lookup() {
+            const order = document.getElementById("order").value.trim();
+            if (!order) return alert("Enter an order number.");
+
+            const r = await fetch("/internal/api/phase2", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
+            });
+
+            const data = await r.json();
+
+            if (data.status === "not_found") {
+              alert("No match found.");
+              return;
+            }
+
+            if (data.status === "multiple") {
+              alert("Multiple matches found — chooser coming next.");
+              return;
+            }
+
+            if (data.status !== "ok") {
+              alert("Error: " + (data.message || "Unknown"));
+              return;
+            }
+
+            const match = data.matches[0];
+            currentRow = match.row;
+
+            document.getElementById("result").style.display = "block";
+            document.getElementById("rowNum").innerText = match.row;
+            document.getElementById("status").innerText = match.status || "";
+            document.getElementById("productionStage").value = match.p
