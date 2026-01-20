@@ -122,9 +122,6 @@ async function sendCustomerEmail(data) {
 
 /************************************************************
  * WARRANTY SUBMISSION ENDPOINT (PHASE 1)
- * 1) Write to sheet via Apps Script
- * 2) Send CS notification email
- * 3) Send customer confirmation email
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
@@ -137,7 +134,6 @@ app.post("/warranty", async (req, res) => {
     if (!r.ok) throw new Error(await r.text());
     const result = await r.json();
 
-    // Emails only after sheet write succeeds
     await sendCSEmail(req.body, result.row);
     await sendCustomerEmail(req.body);
 
@@ -151,11 +147,7 @@ app.post("/warranty", async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
- * Server-side proxy so the Apps Script key is never exposed to browser JS.
- *
- * Requires env vars:
- *   PHASE2_SCRIPT_URL
- *   PHASE2_KEY
+ * Keeps Apps Script key server-side (not exposed in browser JS)
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -175,7 +167,6 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 
     const text = await r.text();
 
-    // Try JSON first
     try {
       const data = JSON.parse(text);
       return res.json(data);
@@ -195,7 +186,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 });
 
 /************************************************************
- * INTERNAL PAGE HTML GENERATOR
+ * INTERNAL PAGE HTML GENERATOR (Intake/Production)
  ************************************************************/
 function getInternalPageHtml(cfg) {
   const optionHtml = cfg.options.map(v => `<option>${v}</option>`).join("");
@@ -320,7 +311,7 @@ app.get("/internal/production", requireInternal, (req, res) => {
 });
 
 /************************************************************
- * INTERNAL PAGE: QC (STEP 14)
+ * INTERNAL PAGE: QC (Reason Code dropdown)
  ************************************************************/
 app.get("/internal/qc", requireInternal, (req, res) => {
   res.send(`<!doctype html>
@@ -359,7 +350,23 @@ app.get("/internal/qc", requireInternal, (req, res) => {
     </select>
 
     <label>AE: QC Reason Code</label>
-    <input id="qcReasonCode" placeholder="Example: CONNECTOR / SOLDER / NO POWER / OTHER" />
+    <select id="qcReasonCode">
+      <option value="">(blank)</option>
+      <option>NO ISSUE FOUND</option>
+      <option>INTERMITTENT</option>
+      <option>NO POWER</option>
+      <option>WRONG PART / MISLABEL</option>
+      <option>CONNECTOR DAMAGE</option>
+      <option>PIN PUSHED / BENT</option>
+      <option>SOLDER JOINT</option>
+      <option>COMPONENT FAILURE</option>
+      <option>SHORT / BURN</option>
+      <option>PROGRAM / FIRMWARE</option>
+      <option>USER ERROR / INSTALL</option>
+      <option>WATER / CORROSION</option>
+      <option>PHYSICAL DAMAGE</option>
+      <option>OTHER</option>
+    </select>
 
     <label>QC Failure Notes</label>
     <textarea id="qcFailureNotes" placeholder="What failed and why?"></textarea>
@@ -405,7 +412,7 @@ async function save() {
   if (!currentRow) return alert("Lookup a claim first.");
 
   const qcResult = document.getElementById("qcResult").value;
-  const qcReasonCode = document.getElementById("qcReasonCode").value.trim();
+  const qcReasonCode = document.getElementById("qcReasonCode").value;
   const qcFailureNotes = document.getElementById("qcFailureNotes").value.trim();
 
   const r = await fetch("/internal/api/phase2", {
