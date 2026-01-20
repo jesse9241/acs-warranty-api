@@ -126,9 +126,6 @@ async function sendCustomerEmail(data) {
 
 /************************************************************
  * WARRANTY SUBMISSION ENDPOINT (PHASE 1)
- * 1) Write to sheet via Apps Script
- * 2) Send CS notification email
- * 3) Send customer confirmation email
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
@@ -141,12 +138,10 @@ app.post("/warranty", async (req, res) => {
     if (!r.ok) throw new Error(await r.text());
     const result = await r.json();
 
-    // Emails only after sheet write succeeds
     await sendCSEmail(req.body, result.row);
     await sendCustomerEmail(req.body);
 
     res.json({ status: "ok", row: result.row || null });
-
   } catch (err) {
     console.error("Warranty submission failed:", err);
     res.status(500).json({ error: err.message });
@@ -155,11 +150,6 @@ app.post("/warranty", async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
- * Server-side proxy so the Apps Script key is never exposed to browser JS.
- *
- * Requires env vars:
- *   PHASE2_SCRIPT_URL
- *   PHASE2_KEY
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -169,10 +159,7 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
     if (!scriptUrl) throw new Error("Missing env var PHASE2_SCRIPT_URL");
     if (!key) throw new Error("Missing env var PHASE2_KEY");
 
-    const payload = {
-      ...req.body,
-      key
-    };
+    const payload = { ...req.body, key };
 
     const r = await fetch(scriptUrl, {
       method: "POST",
@@ -182,7 +169,6 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 
     const data = await r.json();
     res.json(data);
-
   } catch (err) {
     console.error("Phase 2 proxy error:", err);
     res.status(500).json({ status: "error", message: err.message });
@@ -190,205 +176,206 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 });
 
 /************************************************************
- * PHASE 2 INTERNAL INTAKE PAGE
+ * INTERNAL PAGE: INTAKE
  ************************************************************/
 app.get("/internal/intake", requireInternal, (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>ACS Warranty Intake</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-          input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
-          .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
-          .ok { color: green; }
-          .err { color: red; }
-          .small { color: #666; font-size: 12px; margin-top: 6px; }
-        </style>
-      </head>
-      <body>
-        <h2>ACS Warranty – Receiving Intake</h2>
-        <p class="small">
-          Step 1: Lookup by <b>Original Order #</b><br/>
-          Step 2: Update <b>Intake Stage</b>
-        </p>
+  res.send(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ACS Warranty Intake</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
+    .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
+    .ok { color: green; }
+    .err { color: red; }
+    .small { color: #666; font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>ACS Warranty – Receiving Intake</h2>
+  <p class="small">Lookup by <b>Original Order #</b> → Update <b>Intake Stage</b></p>
 
-        <label>Original Order #</label>
-        <input id="order" placeholder="Enter order number" />
+  <label>Original Order #</label>
+  <input id="order" placeholder="Enter order number" />
+  <button onclick="lookup()">Lookup</button>
 
-        <button onclick="lookup()">Lookup</button>
+  <div id="result" class="row" style="display:none;">
+    <div><b>Row:</b> <span id="rowNum"></span></div>
+    <div><b>Status:</b> <span id="status"></span></div>
+    <hr/>
 
-        <div id="result" class="row" style="display:none;">
-          <div><b>Row:</b> <span id="rowNum"></span></div>
-          <div><b>Status:</b> <span id="status"></span></div>
+    <label>Intake Stage</label>
+    <select id="intakeStage">
+      <option value="">(blank)</option>
+      <option>Not Started</option>
+      <option>In Intake</option>
+      <option>Intake Complete</option>
+    </select>
 
-          <hr/>
+    <button onclick="save()">Save Intake Stage</button>
+    <div id="msg"></div>
+  </div>
 
-          <label>Intake Stage</label>
-          <select id="intakeStage">
-            <option value="">(blank)</option>
-            <option>Not Started</option>
-            <option>In Intake</option>
-            <option>Intake Complete</option>
-          </select>
+<script>
+let currentRow = null;
 
-          <button onclick="save()">Save Intake Stage</button>
+async function lookup() {
+  const order = document.getElementById("order").value.trim();
+  if (!order) return alert("Enter an order number.");
 
-          <div id="msg"></div>
-        </div>
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
+  });
 
-        <script>
-          let currentRow = null;
+  const data = await r.json();
 
-          async function lookup() {
-            const order = document.getElementById("order").value.trim();
-            if (!order) return alert("Enter an order number.");
+  if (data.status === "not_found") return alert("No match found.");
+  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
-            const r = await fetch("/internal/api/phase2", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
-            });
+  const match = data.matches[0];
+  currentRow = match.row;
 
-            const data = await r.json();
+  document.getElementById("result").style.display = "block";
+  document.getElementById("rowNum").innerText = match.row;
+  document.getElementById("status").innerText = match.status || "";
+  document.getElementById("intakeStage").value = match.intakeStage || "";
+  document.getElementById("msg").innerHTML = "";
+}
 
-            if (data.status === "not_found") {
-              alert("No match found.");
-              return;
-            }
+async function save() {
+  if (!currentRow) return alert("Lookup a claim first.");
 
-            if (data.status === "multiple") {
-              alert("Multiple matches found — chooser coming next.");
-              return;
-            }
+  const intakeStage = document.getElementById("intakeStage").value;
 
-            if (data.status !== "ok") {
-              alert("Error: " + (data.message || "Unknown"));
-              return;
-            }
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      row: currentRow,
+      updates: { "Intake Stage": intakeStage }
+    })
+  });
 
-            const match = data.matches[0];
-            currentRow = match.row;
+  const data = await r.json();
+  const msg = document.getElementById("msg");
 
-            document.getElementById("result").style.display = "block";
-            document.getElementById("rowNum").innerText = match.row;
-            document.getElementById("status").innerText = match.status || "";
-            document.getElementById("intakeStage").value = match.intakeStage || "";
-            document.getElementById("msg").innerHTML = "";
-          }
-
-          async function save() {
-            if (!currentRow) return alert("Lookup a claim first.");
-
-            const intakeStage = document.getElementById("intakeStage").value;
-
-            const r = await fetch("/internal/api/phase2", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                action: "update",
-                row: currentRow,
-                updates: { "Intake Stage": intakeStage }
-              })
-            });
-
-            const data = await r.json();
-            const msg = document.getElementById("msg");
-
-            if (data.status === "ok") {
-              msg.innerHTML = "<p class='ok'>Saved ✅</p>";
-            } else {
-              msg.innerHTML = "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
-            }
-          }
-        </script>
-      </body>
-    </html>
-  `);
+  msg.innerHTML = (data.status === "ok")
+    ? "<p class='ok'>Saved ✅</p>"
+    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+}
+</script>
+</body>
+</html>`);
 });
 
 /************************************************************
- * PHASE 2 INTERNAL PRODUCTION PAGE (STEP 13)
+ * INTERNAL PAGE: PRODUCTION (STEP 13)
  ************************************************************/
 app.get("/internal/production", requireInternal, (req, res) => {
-  res.send(`
-    <html>
-      <head>
-        <title>ACS Warranty Production</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-          input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
-          .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
-          .ok { color: green; }
-          .err { color: red; }
-          .small { color: #666; font-size: 12px; margin-top: 6px; }
-        </style>
-      </head>
-      <body>
-        <h2>ACS Warranty – Production</h2>
-        <p class="small">
-          Step 1: Lookup by <b>Original Order #</b><br/>
-          Step 2: Update <b>Production Stage</b>
-        </p>
+  res.send(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ACS Warranty Production</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
+    .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
+    .ok { color: green; }
+    .err { color: red; }
+    .small { color: #666; font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>ACS Warranty – Production</h2>
+  <p class="small">Lookup by <b>Original Order #</b> → Update <b>Production Stage</b></p>
 
-        <label>Original Order #</label>
-        <input id="order" placeholder="Enter order number" />
+  <label>Original Order #</label>
+  <input id="order" placeholder="Enter order number" />
+  <button onclick="lookup()">Lookup</button>
 
-        <button onclick="lookup()">Lookup</button>
+  <div id="result" class="row" style="display:none;">
+    <div><b>Row:</b> <span id="rowNum"></span></div>
+    <div><b>Status:</b> <span id="status"></span></div>
+    <hr/>
 
-        <div id="result" class="row" style="display:none;">
-          <div><b>Row:</b> <span id="rowNum"></span></div>
-          <div><b>Status:</b> <span id="status"></span></div>
+    <label>Production Stage</label>
+    <select id="productionStage">
+      <option value="">(blank)</option>
+      <option>Queued</option>
+      <option>In Progress</option>
+      <option>Complete</option>
+    </select>
 
-          <hr/>
+    <button onclick="save()">Save Production Stage</button>
+    <div id="msg"></div>
+  </div>
 
-          <label>Production Stage</label>
-          <select id="productionStage">
-            <option value="">(blank)</option>
-            <option>Queued</option>
-            <option>In Progress</option>
-            <option>Complete</option>
-          </select>
+<script>
+let currentRow = null;
 
-          <button onclick="save()">Save Production Stage</button>
+async function lookup() {
+  const order = document.getElementById("order").value.trim();
+  if (!order) return alert("Enter an order number.");
 
-          <div id="msg"></div>
-        </div>
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
+  });
 
-        <script>
-          let currentRow = null;
+  const data = await r.json();
 
-          async function lookup() {
-            const order = document.getElementById("order").value.trim();
-            if (!order) return alert("Enter an order number.");
+  if (data.status === "not_found") return alert("No match found.");
+  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
 
-            const r = await fetch("/internal/api/phase2", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
-            });
+  const match = data.matches[0];
+  currentRow = match.row;
 
-            const data = await r.json();
+  document.getElementById("result").style.display = "block";
+  document.getElementById("rowNum").innerText = match.row;
+  document.getElementById("status").innerText = match.status || "";
+  document.getElementById("productionStage").value = match.productionStage || "";
+  document.getElementById("msg").innerHTML = "";
+}
 
-            if (data.status === "not_found") {
-              alert("No match found.");
-              return;
-            }
+async function save() {
+  if (!currentRow) return alert("Lookup a claim first.");
 
-            if (data.status === "multiple") {
-              alert("Multiple matches found — chooser coming next.");
-              return;
-            }
+  const productionStage = document.getElementById("productionStage").value;
 
-            if (data.status !== "ok") {
-              alert("Error: " + (data.message || "Unknown"));
-              return;
-            }
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      row: currentRow,
+      updates: { "Production Stage": productionStage }
+    })
+  });
 
-            const match = data.matches[0];
-            currentRow = match.row;
+  const data = await r.json();
+  const msg = document.getElementById("msg");
 
-            document.getElementById("result").style.display = "block";
-            document.getElementById("rowNum").innerText = match.row;
-            document.getElementById("status").innerText = match.status || "";
-            document.getElementById("productionStage").value = match.p
+  msg.innerHTML = (data.status === "ok")
+    ? "<p class='ok'>Saved ✅</p>"
+    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+}
+</script>
+</body>
+</html>`);
+});
+
+/************************************************************
+ * SERVER START
+ ************************************************************/
+app.listen(PORT, () => {
+  console.log("🚀 ACS Warranty API running on port", PORT);
+});
