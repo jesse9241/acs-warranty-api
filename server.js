@@ -49,6 +49,8 @@ app.get("/ping", (req, res) => {
 
 /************************************************************
  * INTERNAL LOGIN HELPER (TEMP)
+ * Visit once:
+ *   /internal/login
  ************************************************************/
 app.get("/internal/login", (req, res) => {
   res.setHeader(
@@ -143,6 +145,7 @@ app.post("/warranty", async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
+ * Hardened: handles HTML responses (Google login page) safely.
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -160,8 +163,20 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    const data = await r.json();
-    res.json(data);
+    const text = await r.text();
+
+    // Try JSON first
+    try {
+      const data = JSON.parse(text);
+      return res.json(data);
+    } catch (jsonErr) {
+      console.error("Phase 2 proxy returned non-JSON:", text.slice(0, 300));
+      return res.status(500).json({
+        status: "error",
+        message: "Phase 2 Apps Script did not return JSON (likely permission/login page).",
+        preview: text.slice(0, 300)
+      });
+    }
   } catch (err) {
     console.error("Phase 2 proxy error:", err);
     res.status(500).json({ status: "error", message: err.message });
@@ -169,42 +184,10 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 });
 
 /************************************************************
- * INTERNAL PAGE: INTAKE
- ************************************************************/
-app.get("/internal/intake", requireInternal, (req, res) => {
-  res.send(getInternalPageHtml({
-    title: "ACS Warranty – Receiving Intake",
-    stageLabel: "Intake Stage",
-    stageId: "intakeStage",
-    options: ["", "Not Started", "In Intake", "Intake Complete"],
-    matchField: "intakeStage",
-    updateHeader: "Intake Stage",
-    buttonText: "Save Intake Stage"
-  }));
-});
-
-/************************************************************
- * INTERNAL PAGE: PRODUCTION
- ************************************************************/
-app.get("/internal/production", requireInternal, (req, res) => {
-  res.send(getInternalPageHtml({
-    title: "ACS Warranty – Production",
-    stageLabel: "Production Stage",
-    stageId: "productionStage",
-    options: ["", "Queued", "In Progress", "Complete"],
-    matchField: "productionStage",
-    updateHeader: "Production Stage",
-    buttonText: "Save Production Stage"
-  }));
-});
-
-/************************************************************
- * Internal Page HTML Generator (avoids huge copy/paste errors)
+ * INTERNAL PAGE HTML GENERATOR
  ************************************************************/
 function getInternalPageHtml(cfg) {
-  const optionHtml = cfg.options
-    .map(v => `<option>${v}</option>`)
-    .join("");
+  const optionHtml = cfg.options.map(v => `<option>${v}</option>`).join("");
 
   return `<!doctype html>
 <html>
@@ -297,6 +280,33 @@ async function save() {
 </body>
 </html>`;
 }
+
+/************************************************************
+ * INTERNAL PAGES
+ ************************************************************/
+app.get("/internal/intake", requireInternal, (req, res) => {
+  res.send(getInternalPageHtml({
+    title: "ACS Warranty – Receiving Intake",
+    stageLabel: "Intake Stage",
+    stageId: "intakeStage",
+    options: ["", "Not Started", "In Intake", "Intake Complete"],
+    matchField: "intakeStage",
+    updateHeader: "Intake Stage",
+    buttonText: "Save Intake Stage"
+  }));
+});
+
+app.get("/internal/production", requireInternal, (req, res) => {
+  res.send(getInternalPageHtml({
+    title: "ACS Warranty – Production",
+    stageLabel: "Production Stage",
+    stageId: "productionStage",
+    options: ["", "Queued", "In Progress", "Complete"],
+    matchField: "productionStage",
+    updateHeader: "Production Stage",
+    buttonText: "Save Production Stage"
+  }));
+});
 
 /************************************************************
  * SERVER START
