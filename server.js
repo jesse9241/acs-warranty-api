@@ -18,15 +18,29 @@ app.use(express.static("Public"));
 
 /************************************************************
  * INTERNAL AUTH GATE (PHASE 2 INTERNAL TOOLS)
- * Requires request header:
- *   X-ACS-KEY: <ACS_INTERNAL_KEY>
+ * Accepts either:
+ *  - Header:   X-ACS-KEY: <ACS_INTERNAL_KEY>
+ *  - Cookie:   acs_internal_key=<ACS_INTERNAL_KEY>
  ************************************************************/
 function requireInternal(req, res, next) {
-  const key = req.headers["x-acs-key"];
-  if (!process.env.ACS_INTERNAL_KEY || key !== process.env.ACS_INTERNAL_KEY) {
-    return res.status(401).send("Unauthorized");
+  const expected = process.env.ACS_INTERNAL_KEY;
+  if (!expected) return res.status(401).send("Unauthorized");
+
+  const headerKey = req.headers["x-acs-key"];
+
+  const cookie = req.headers.cookie || "";
+  const cookieKey = cookie
+    .split(";")
+    .map(x => x.trim())
+    .find(x => x.startsWith("acs_internal_key="));
+
+  const cookieVal = cookieKey ? cookieKey.split("=")[1] : null;
+
+  if (headerKey === expected || cookieVal === expected) {
+    return next();
   }
-  next();
+
+  return res.status(401).send("Unauthorized");
 }
 
 /************************************************************
@@ -34,6 +48,20 @@ function requireInternal(req, res, next) {
  ************************************************************/
 app.get("/ping", (req, res) => {
   res.json({ status: "ok", message: "Web app is live" });
+});
+
+/************************************************************
+ * INTERNAL LOGIN HELPER (TEMP)
+ * Visit once in browser:
+ *   /internal/login
+ * Then you can access /internal/intake without ModHeader.
+ ************************************************************/
+app.get("/internal/login", (req, res) => {
+  res.setHeader(
+    "Set-Cookie",
+    `acs_internal_key=${process.env.ACS_INTERNAL_KEY}; Path=/; Max-Age=86400; SameSite=Lax`
+  );
+  res.send("Logged in ✅ You can now open /internal/intake");
 });
 
 /************************************************************
@@ -129,13 +157,12 @@ app.post("/warranty", async (req, res) => {
  * PHASE 2 INTERNAL PROXY API
  * Server-side proxy so the Apps Script key is never exposed to browser JS.
  *
- * Requires:
+ * Requires env vars:
  *   PHASE2_SCRIPT_URL
  *   PHASE2_KEY
  *
  * Request example:
  *   POST /internal/api/phase2
- *   Header: X-ACS-KEY: <ACS_INTERNAL_KEY>
  *   Body: { action:"lookup", originalOrderNumber:"335508" }
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
@@ -169,8 +196,6 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
 /************************************************************
  * PHASE 2 INTERNAL INTAKE PAGE
  * GET /internal/intake
- * Header required:
- *   X-ACS-KEY: <ACS_INTERNAL_KEY>
  ************************************************************/
 app.get("/internal/intake", requireInternal, (req, res) => {
   res.send(`
@@ -189,7 +214,8 @@ app.get("/internal/intake", requireInternal, (req, res) => {
       <body>
         <h2>ACS Warranty – Receiving Intake</h2>
         <p class="small">
-          Internal tool. Lookup by <b>Original Order #</b>, then update <b>Intake Stage</b>.
+          Step 1: Lookup by <b>Original Order #</b><br/>
+          Step 2: Update <b>Intake Stage</b>
         </p>
 
         <label>Original Order #</label>
@@ -237,7 +263,7 @@ app.get("/internal/intake", requireInternal, (req, res) => {
             }
 
             if (data.status === "multiple") {
-              alert("Multiple matches found — we’ll add a chooser next.");
+              alert("Multiple matches found — chooser coming next.");
               return;
             }
 
