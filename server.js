@@ -18,9 +18,6 @@ app.use(express.static("Public"));
 
 /************************************************************
  * INTERNAL AUTH GATE (PHASE 2 INTERNAL TOOLS)
- * Accepts either:
- *  - Header:   X-ACS-KEY: <ACS_INTERNAL_KEY>
- *  - Cookie:   acs_internal_key=<ACS_INTERNAL_KEY>
  ************************************************************/
 function requireInternal(req, res, next) {
   const expected = process.env.ACS_INTERNAL_KEY;
@@ -49,8 +46,6 @@ app.get("/ping", (req, res) => {
 
 /************************************************************
  * INTERNAL LOGIN HELPER (TEMP)
- * Visit once:
- *   /internal/login
  ************************************************************/
 app.get("/internal/login", (req, res) => {
   res.setHeader(
@@ -73,7 +68,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Quiet check (logs only if broken)
 transporter.verify(err => {
   if (err) console.error("SMTP error:", err.message);
 });
@@ -147,7 +141,6 @@ app.post("/warranty", async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
- * Keeps Apps Script key server-side (not exposed in browser JS)
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -311,7 +304,7 @@ app.get("/internal/production", requireInternal, (req, res) => {
 });
 
 /************************************************************
- * INTERNAL PAGE: QC (Reason Code dropdown)
+ * INTERNAL PAGE: QC (auto-load reason codes from Apps Script)
  ************************************************************/
 app.get("/internal/qc", requireInternal, (req, res) => {
   res.send(`<!doctype html>
@@ -351,21 +344,7 @@ app.get("/internal/qc", requireInternal, (req, res) => {
 
     <label>AE: QC Reason Code</label>
     <select id="qcReasonCode">
-      <option value="">(blank)</option>
-      <option>NO ISSUE FOUND</option>
-      <option>INTERMITTENT</option>
-      <option>NO POWER</option>
-      <option>WRONG PART / MISLABEL</option>
-      <option>CONNECTOR DAMAGE</option>
-      <option>PIN PUSHED / BENT</option>
-      <option>SOLDER JOINT</option>
-      <option>COMPONENT FAILURE</option>
-      <option>SHORT / BURN</option>
-      <option>PROGRAM / FIRMWARE</option>
-      <option>USER ERROR / INSTALL</option>
-      <option>WATER / CORROSION</option>
-      <option>PHYSICAL DAMAGE</option>
-      <option>OTHER</option>
+      <option value="">Loading…</option>
     </select>
 
     <label>QC Failure Notes</label>
@@ -377,6 +356,36 @@ app.get("/internal/qc", requireInternal, (req, res) => {
 
 <script>
 let currentRow = null;
+
+async function loadReasons(selected = "") {
+  const dropdown = document.getElementById("qcReasonCode");
+  dropdown.innerHTML = "<option value=''>Loading…</option>";
+
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "qcreasons" })
+  });
+
+  const data = await r.json();
+
+  dropdown.innerHTML = "<option value=''></option>";
+
+  if (data.status !== "ok") {
+    dropdown.innerHTML = "<option value=''>ERROR LOADING LIST</option>";
+    return;
+  }
+
+  const reasons = data.reasons || [];
+  reasons.forEach(reason => {
+    const opt = document.createElement("option");
+    opt.value = reason;
+    opt.textContent = reason;
+    dropdown.appendChild(opt);
+  });
+
+  dropdown.value = selected || "";
+}
 
 async function lookup() {
   const order = document.getElementById("order").value.trim();
@@ -402,8 +411,8 @@ async function lookup() {
   document.getElementById("status").innerText = match.status || "";
 
   document.getElementById("qcResult").value = match.qcResult || "";
-  document.getElementById("qcReasonCode").value = match.qcReasonCode || "";
   document.getElementById("qcFailureNotes").value = match.qcFailureNotes || "";
+  await loadReasons(match.qcReasonCode || "");
 
   document.getElementById("msg").innerHTML = "";
 }
