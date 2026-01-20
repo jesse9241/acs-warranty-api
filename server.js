@@ -36,10 +36,7 @@ function requireInternal(req, res, next) {
 
   const cookieVal = cookieKey ? cookieKey.split("=")[1] : null;
 
-  if (headerKey === expected || cookieVal === expected) {
-    return next();
-  }
-
+  if (headerKey === expected || cookieVal === expected) return next();
   return res.status(401).send("Unauthorized");
 }
 
@@ -52,9 +49,6 @@ app.get("/ping", (req, res) => {
 
 /************************************************************
  * INTERNAL LOGIN HELPER (TEMP)
- * Visit once in browser:
- *   /internal/login
- * Then you can access /internal/* pages without ModHeader.
  ************************************************************/
 app.get("/internal/login", (req, res) => {
   res.setHeader(
@@ -77,7 +71,6 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Quiet check (logs only if broken)
 transporter.verify(err => {
   if (err) console.error("SMTP error:", err.message);
 });
@@ -179,110 +172,45 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
  * INTERNAL PAGE: INTAKE
  ************************************************************/
 app.get("/internal/intake", requireInternal, (req, res) => {
-  res.send(`<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>ACS Warranty Intake</title>
-  <style>
-    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
-    input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
-    .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
-    .ok { color: green; }
-    .err { color: red; }
-    .small { color: #666; font-size: 12px; margin-top: 6px; }
-  </style>
-</head>
-<body>
-  <h2>ACS Warranty – Receiving Intake</h2>
-  <p class="small">Lookup by <b>Original Order #</b> → Update <b>Intake Stage</b></p>
-
-  <label>Original Order #</label>
-  <input id="order" placeholder="Enter order number" />
-  <button onclick="lookup()">Lookup</button>
-
-  <div id="result" class="row" style="display:none;">
-    <div><b>Row:</b> <span id="rowNum"></span></div>
-    <div><b>Status:</b> <span id="status"></span></div>
-    <hr/>
-
-    <label>Intake Stage</label>
-    <select id="intakeStage">
-      <option value="">(blank)</option>
-      <option>Not Started</option>
-      <option>In Intake</option>
-      <option>Intake Complete</option>
-    </select>
-
-    <button onclick="save()">Save Intake Stage</button>
-    <div id="msg"></div>
-  </div>
-
-<script>
-let currentRow = null;
-
-async function lookup() {
-  const order = document.getElementById("order").value.trim();
-  if (!order) return alert("Enter an order number.");
-
-  const r = await fetch("/internal/api/phase2", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
-  });
-
-  const data = await r.json();
-
-  if (data.status === "not_found") return alert("No match found.");
-  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
-  if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
-
-  const match = data.matches[0];
-  currentRow = match.row;
-
-  document.getElementById("result").style.display = "block";
-  document.getElementById("rowNum").innerText = match.row;
-  document.getElementById("status").innerText = match.status || "";
-  document.getElementById("intakeStage").value = match.intakeStage || "";
-  document.getElementById("msg").innerHTML = "";
-}
-
-async function save() {
-  if (!currentRow) return alert("Lookup a claim first.");
-
-  const intakeStage = document.getElementById("intakeStage").value;
-
-  const r = await fetch("/internal/api/phase2", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "update",
-      row: currentRow,
-      updates: { "Intake Stage": intakeStage }
-    })
-  });
-
-  const data = await r.json();
-  const msg = document.getElementById("msg");
-
-  msg.innerHTML = (data.status === "ok")
-    ? "<p class='ok'>Saved ✅</p>"
-    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
-}
-</script>
-</body>
-</html>`);
+  res.send(getInternalPageHtml({
+    title: "ACS Warranty – Receiving Intake",
+    stageLabel: "Intake Stage",
+    stageId: "intakeStage",
+    options: ["", "Not Started", "In Intake", "Intake Complete"],
+    matchField: "intakeStage",
+    updateHeader: "Intake Stage",
+    buttonText: "Save Intake Stage"
+  }));
 });
 
 /************************************************************
- * INTERNAL PAGE: PRODUCTION (STEP 13)
+ * INTERNAL PAGE: PRODUCTION
  ************************************************************/
 app.get("/internal/production", requireInternal, (req, res) => {
-  res.send(`<!doctype html>
+  res.send(getInternalPageHtml({
+    title: "ACS Warranty – Production",
+    stageLabel: "Production Stage",
+    stageId: "productionStage",
+    options: ["", "Queued", "In Progress", "Complete"],
+    matchField: "productionStage",
+    updateHeader: "Production Stage",
+    buttonText: "Save Production Stage"
+  }));
+});
+
+/************************************************************
+ * Internal Page HTML Generator (avoids huge copy/paste errors)
+ ************************************************************/
+function getInternalPageHtml(cfg) {
+  const optionHtml = cfg.options
+    .map(v => `<option>${v}</option>`)
+    .join("");
+
+  return `<!doctype html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>ACS Warranty Production</title>
+  <title>${cfg.title}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
     input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
@@ -293,8 +221,8 @@ app.get("/internal/production", requireInternal, (req, res) => {
   </style>
 </head>
 <body>
-  <h2>ACS Warranty – Production</h2>
-  <p class="small">Lookup by <b>Original Order #</b> → Update <b>Production Stage</b></p>
+  <h2>${cfg.title}</h2>
+  <p class="small">Lookup by <b>Original Order #</b> → Update <b>${cfg.stageLabel}</b></p>
 
   <label>Original Order #</label>
   <input id="order" placeholder="Enter order number" />
@@ -305,15 +233,12 @@ app.get("/internal/production", requireInternal, (req, res) => {
     <div><b>Status:</b> <span id="status"></span></div>
     <hr/>
 
-    <label>Production Stage</label>
-    <select id="productionStage">
-      <option value="">(blank)</option>
-      <option>Queued</option>
-      <option>In Progress</option>
-      <option>Complete</option>
+    <label>${cfg.stageLabel}</label>
+    <select id="${cfg.stageId}">
+      ${optionHtml}
     </select>
 
-    <button onclick="save()">Save Production Stage</button>
+    <button onclick="save()">${cfg.buttonText}</button>
     <div id="msg"></div>
   </div>
 
@@ -342,14 +267,14 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
-  document.getElementById("productionStage").value = match.productionStage || "";
+  document.getElementById("${cfg.stageId}").value = match["${cfg.matchField}"] || "";
   document.getElementById("msg").innerHTML = "";
 }
 
 async function save() {
   if (!currentRow) return alert("Lookup a claim first.");
 
-  const productionStage = document.getElementById("productionStage").value;
+  const val = document.getElementById("${cfg.stageId}").value;
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -357,7 +282,7 @@ async function save() {
     body: JSON.stringify({
       action: "update",
       row: currentRow,
-      updates: { "Production Stage": productionStage }
+      updates: { "${cfg.updateHeader}": val }
     })
   });
 
@@ -370,8 +295,8 @@ async function save() {
 }
 </script>
 </body>
-</html>`);
-});
+</html>`;
+}
 
 /************************************************************
  * SERVER START
