@@ -73,6 +73,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+// Quiet check (logs only if broken)
 transporter.verify(err => {
   if (err) console.error("SMTP error:", err.message);
 });
@@ -121,6 +122,9 @@ async function sendCustomerEmail(data) {
 
 /************************************************************
  * WARRANTY SUBMISSION ENDPOINT (PHASE 1)
+ * 1) Write to sheet via Apps Script
+ * 2) Send CS notification email
+ * 3) Send customer confirmation email
  ************************************************************/
 app.post("/warranty", async (req, res) => {
   try {
@@ -133,10 +137,12 @@ app.post("/warranty", async (req, res) => {
     if (!r.ok) throw new Error(await r.text());
     const result = await r.json();
 
+    // Emails only after sheet write succeeds
     await sendCSEmail(req.body, result.row);
     await sendCustomerEmail(req.body);
 
     res.json({ status: "ok", row: result.row || null });
+
   } catch (err) {
     console.error("Warranty submission failed:", err);
     res.status(500).json({ error: err.message });
@@ -145,7 +151,11 @@ app.post("/warranty", async (req, res) => {
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
- * Hardened: handles HTML responses (Google login page) safely.
+ * Server-side proxy so the Apps Script key is never exposed to browser JS.
+ *
+ * Requires env vars:
+ *   PHASE2_SCRIPT_URL
+ *   PHASE2_KEY
  ************************************************************/
 app.post("/internal/api/phase2", requireInternal, async (req, res) => {
   try {
@@ -170,13 +180,14 @@ app.post("/internal/api/phase2", requireInternal, async (req, res) => {
       const data = JSON.parse(text);
       return res.json(data);
     } catch (jsonErr) {
-      console.error("Phase 2 proxy returned non-JSON:", text.slice(0, 300));
+      console.error("Phase 2 proxy returned non-JSON:", text.slice(0, 600));
       return res.status(500).json({
         status: "error",
-        message: "Phase 2 Apps Script did not return JSON (likely permission/login page).",
-        preview: text.slice(0, 2000)
+        message: "Phase 2 Apps Script did not return JSON (HTML returned).",
+        preview: text.slice(0, 600)
       });
     }
+
   } catch (err) {
     console.error("Phase 2 proxy error:", err);
     res.status(500).json({ status: "error", message: err.message });
@@ -282,7 +293,7 @@ async function save() {
 }
 
 /************************************************************
- * INTERNAL PAGES
+ * INTERNAL PAGES: INTAKE + PRODUCTION
  ************************************************************/
 app.get("/internal/intake", requireInternal, (req, res) => {
   res.send(getInternalPageHtml({
@@ -301,11 +312,126 @@ app.get("/internal/production", requireInternal, (req, res) => {
     title: "ACS Warranty – Production",
     stageLabel: "Production Stage",
     stageId: "productionStage",
-    options: ["", "Queued", "In Progress", "Complete"],
+    options: ["", "Que", "Queued", "Complete"],
     matchField: "productionStage",
     updateHeader: "Production Stage",
     buttonText: "Save Production Stage"
   }));
+});
+
+/************************************************************
+ * INTERNAL PAGE: QC (STEP 14)
+ ************************************************************/
+app.get("/internal/qc", requireInternal, (req, res) => {
+  res.send(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ACS Warranty – QC</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 750px; margin: auto; }
+    input, select, textarea, button { padding: 10px; margin: 6px 0; width: 100%; }
+    textarea { min-height: 90px; }
+    .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
+    .ok { color: green; }
+    .err { color: red; }
+    .small { color: #666; font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>ACS Warranty – QC</h2>
+  <p class="small">Lookup by <b>Original Order #</b> → Update <b>QC Result / Reason / Notes</b></p>
+
+  <label>Original Order #</label>
+  <input id="order" placeholder="Enter order number" />
+  <button onclick="lookup()">Lookup</button>
+
+  <div id="result" class="row" style="display:none;">
+    <div><b>Row:</b> <span id="rowNum"></span></div>
+    <div><b>Status:</b> <span id="status"></span></div>
+    <hr/>
+
+    <label>QC Result</label>
+    <select id="qcResult">
+      <option value="">(blank)</option>
+      <option>Pass</option>
+      <option>Fail</option>
+    </select>
+
+    <label>AE: QC Reason Code</label>
+    <input id="qcReasonCode" placeholder="Example: CONNECTOR / SOLDER / NO POWER / OTHER" />
+
+    <label>QC Failure Notes</label>
+    <textarea id="qcFailureNotes" placeholder="What failed and why?"></textarea>
+
+    <button onclick="save()">Save QC</button>
+    <div id="msg"></div>
+  </div>
+
+<script>
+let currentRow = null;
+
+async function lookup() {
+  const order = document.getElementById("order").value.trim();
+  if (!order) return alert("Enter an order number.");
+
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
+  });
+
+  const data = await r.json();
+
+  if (data.status === "not_found") return alert("No match found.");
+  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
+
+  const match = data.matches[0];
+  currentRow = match.row;
+
+  document.getElementById("result").style.display = "block";
+  document.getElementById("rowNum").innerText = match.row;
+  document.getElementById("status").innerText = match.status || "";
+
+  document.getElementById("qcResult").value = match.qcResult || "";
+  document.getElementById("qcReasonCode").value = match.qcReasonCode || "";
+  document.getElementById("qcFailureNotes").value = match.qcFailureNotes || "";
+
+  document.getElementById("msg").innerHTML = "";
+}
+
+async function save() {
+  if (!currentRow) return alert("Lookup a claim first.");
+
+  const qcResult = document.getElementById("qcResult").value;
+  const qcReasonCode = document.getElementById("qcReasonCode").value.trim();
+  const qcFailureNotes = document.getElementById("qcFailureNotes").value.trim();
+
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      row: currentRow,
+      updates: {
+        "QC Result": qcResult,
+        "AE: QC Reason Code": qcReasonCode,
+        "QC Failure Notes": qcFailureNotes
+      }
+    })
+  });
+
+  const data = await r.json();
+  const msg = document.getElementById("msg");
+
+  msg.innerHTML = (data.status === "ok")
+    ? "<p class='ok'>Saved ✅</p>"
+    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+}
+</script>
+</body>
+</html>`);
 });
 
 /************************************************************
