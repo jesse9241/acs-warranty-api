@@ -126,13 +126,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("warranty-form");
   if (!form) return;
 
+  // ✅ IMPORTANT: Paste your Apps Script /exec URL here
+  const APPS_SCRIPT_LOOKUP_URL = "PASTE_YOUR_APPS_SCRIPT_EXEC_URL_HERE";
+
   /* ============================
      SUBMIT HANDLER
   ============================ */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-
-    console.log("UPC SENT:", form.upc.value);
 
     const payload = {
       source: form.source.value,
@@ -148,12 +149,12 @@ document.addEventListener("DOMContentLoaded", () => {
       notes: form.notes.value || ""
     };
 
-   try {
-  const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+    try {
+      const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
 
       if (!res.ok) throw new Error("Submit failed");
 
@@ -167,32 +168,42 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================
-     LOOKUP (OPTIONAL / SAFE)
+     LOOKUP (FIXED ✅)
   ============================ */
   const lookupBtn = document.getElementById("lookupBtn");
 
   if (lookupBtn) {
     lookupBtn.addEventListener("click", async () => {
       const order = form.originalOrderNumber.value.trim();
+
       if (!order) {
         alert("Enter or scan an Order # first.");
         return;
       }
 
       try {
-        const res = await fetch(`/warranty/${encodeURIComponent(order)}`);
-        const data = await res.json();
-
-        if (!data.found) {
-          alert("No warranty found.");
+        if (!APPS_SCRIPT_LOOKUP_URL || APPS_SCRIPT_LOOKUP_URL.includes("PASTE_YOUR")) {
+          alert("Lookup is not configured yet (Apps Script URL missing).");
           return;
         }
 
+        // ✅ Calls Apps Script doGet
+        const url = `${APPS_SCRIPT_LOOKUP_URL}?warranty=${encodeURIComponent(order)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+
+        if (!data.found) {
+          alert("No match found.");
+          return;
+        }
+
+        // Prefill fields (only if present)
         if (data.customerName) form.customerName.value = data.customerName;
         if (data.customerEmail) form.customerEmail.value = data.customerEmail;
         if (data.customerPhone) form.customerPhone.value = data.customerPhone;
         if (data.product) form.product.value = data.product;
-        if (data.issueDescription) form.issueDescription.value = data.issueDescription;
+
+        alert("Lookup successful ✅");
 
       } catch (err) {
         console.error(err);
