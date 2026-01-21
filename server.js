@@ -416,7 +416,9 @@ app.get("/internal/production", requireInternal, (req, res) => {
   <div id="result" class="row" style="display:none;">
     <div><b>Row:</b> <span id="rowNum"></span></div>
     <div><b>Status:</b> <span id="status"></span></div>
+    <div><b>Original Warranty #:</b> <span id="owNum">(blank)</span></div>
     <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
+
     <hr/>
 
     <label>Production Stage</label>
