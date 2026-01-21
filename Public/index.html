@@ -126,8 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const form = document.getElementById("warranty-form");
   if (!form) return;
 
-  // ✅ IMPORTANT: Paste your Apps Script /exec URL here
-  const APPS_SCRIPT_LOOKUP_URL = "https://script.google.com/macros/s/AKfycbwVc7cQxDswrLOK0Tm62YgnO6V1AYoVZSiPfnBsMy7MVHrqqRAOzxWYBohrfows5SNv/exec";
+  // ✅ Your Apps Script /exec URL (LOOKUP)
+  const APPS_SCRIPT_LOOKUP_URL =
+    "https://script.google.com/macros/s/AKfycbwVc7cQxDswrLOK0Tm62YgnO6V1AYoVZSiPfnBsMy7MVHrqqRAOzxWYBohrfows5SNv/exec";
 
   /* ============================
      SUBMIT HANDLER
@@ -168,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================
-     LOOKUP (FIXED ✅)
+     LOOKUP (ORDER # ✅)
   ============================ */
   const lookupBtn = document.getElementById("lookupBtn");
 
@@ -182,13 +183,13 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        if (!APPS_SCRIPT_LOOKUP_URL || APPS_SCRIPT_LOOKUP_URL.includes("PASTE_YOUR")) {
+        if (!APPS_SCRIPT_LOOKUP_URL) {
           alert("Lookup is not configured yet (Apps Script URL missing).");
           return;
         }
 
-        // ✅ Calls Apps Script doGet
-        const url = `${APPS_SCRIPT_LOOKUP_URL}?warranty=${encodeURIComponent(order)}`;
+        // ✅ Calls Apps Script doGet using ?order=
+        const url = `${APPS_SCRIPT_LOOKUP_URL}?order=${encodeURIComponent(order)}`;
         const res = await fetch(url);
         const data = await res.json();
 

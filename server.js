@@ -554,7 +554,9 @@ let currentRow = null;
 
 async function loadReasons(selected = "") {
   const dropdown = document.getElementById("qcReasonCode");
-  dropdown.innerHTML = "<option value=''>Loading…</option>";
+
+  // clear dropdown immediately
+  dropdown.innerHTML = "<option value=''></option>";
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -564,15 +566,12 @@ async function loadReasons(selected = "") {
 
   const data = await r.json();
 
-  dropdown.innerHTML = "<option value=''></option>";
-
   if (data.status !== "ok") {
     dropdown.innerHTML = "<option value=''>ERROR LOADING LIST</option>";
     return;
   }
 
-  const reasons = data.reasons || [];
-  reasons.forEach(reason => {
+  (data.reasons || []).forEach(reason => {
     const opt = document.createElement("option");
     opt.value = reason;
     opt.textContent = reason;
@@ -581,6 +580,7 @@ async function loadReasons(selected = "") {
 
   dropdown.value = selected || "";
 }
+
 
 async function lookup() {
   const order = document.getElementById("order").value.trim();
