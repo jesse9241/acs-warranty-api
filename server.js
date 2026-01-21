@@ -390,6 +390,7 @@ async function save() {
 </body>
 </html>`);
 });
+
 app.get("/internal/production", requireInternal, (req, res) => {
   res.send(`<!doctype html>
 <html>
@@ -458,13 +459,14 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
-  const ow =
-  match.originalWarrantyNumber ||
-  match.originalWarranty ||
-  match["Original Warranty #"] ||
-  "";
 
-document.getElementById("owNum").innerText = ow ? ow : "(blank)";
+  const ow =
+    match.originalWarrantyNumber ||
+    match.originalWarranty ||
+    match["Original Warranty #"] ||
+    "";
+
+  document.getElementById("owNum").innerText = ow ? ow : "(blank)";
 
   document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
   document.getElementById("productionStage").value = match.productionStage || "";
@@ -538,8 +540,8 @@ app.get("/internal/qc", requireInternal, (req, res) => {
     </select>
 
     <label>AE: QC Reason Code</label>
-      <select id="qcReasonCode">
-      <option value=""></option>
+    <select id="qcReasonCode">
+      <option value="">Loading…</option>
     </select>
 
     <label>QC Failure Notes</label>
@@ -555,8 +557,8 @@ let currentRow = null;
 async function loadReasons(selected = "") {
   const dropdown = document.getElementById("qcReasonCode");
 
-  // clear dropdown immediately
-  dropdown.innerHTML = "<option value=''></option>";
+  // ✅ show loading immediately
+  dropdown.innerHTML = "<option value=''>Loading…</option>";
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -565,7 +567,9 @@ async function loadReasons(selected = "") {
   });
 
   const data = await r.json();
-    document.getElementById("msg").innerHTML = "Reasons loaded: " + (data.reasons ? data.reasons.length : 0);
+
+  // ✅ wipe and rebuild
+  dropdown.innerHTML = "<option value=''></option>";
 
   if (data.status !== "ok") {
     dropdown.innerHTML = "<option value=''>ERROR LOADING LIST</option>";
@@ -581,7 +585,6 @@ async function loadReasons(selected = "") {
 
   dropdown.value = selected || "";
 }
-
 
 async function lookup() {
   const order = document.getElementById("order").value.trim();
@@ -605,11 +608,11 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
-  document.getElementById("owNum").innerText = match.originalWarrantyNumber || "(blank)";
-  document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
 
   document.getElementById("qcResult").value = match.qcResult || "";
   document.getElementById("qcFailureNotes").value = match.qcFailureNotes || "";
+
+  // ✅ THIS is the missing line that makes it work
   await loadReasons(match.qcReasonCode || "");
 
   document.getElementById("msg").innerHTML = "";
