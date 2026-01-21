@@ -538,8 +538,8 @@ app.get("/internal/qc", requireInternal, (req, res) => {
     </select>
 
     <label>AE: QC Reason Code</label>
-    <select id="qcReasonCode">
-      <option value="">Loading…</option>
+      <select id="qcReasonCode">
+      <option value=""></option>
     </select>
 
     <label>QC Failure Notes</label>
@@ -565,6 +565,7 @@ async function loadReasons(selected = "") {
   });
 
   const data = await r.json();
+    document.getElementById("msg").innerHTML = "Reasons loaded: " + (data.reasons ? data.reasons.length : 0);
 
   if (data.status !== "ok") {
     dropdown.innerHTML = "<option value=''>ERROR LOADING LIST</option>";
