@@ -148,12 +148,12 @@ document.addEventListener("DOMContentLoaded", () => {
       notes: form.notes.value || ""
     };
 
-    try {
-      const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+   try {
+  const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
 
       if (!res.ok) throw new Error("Submit failed");
 
