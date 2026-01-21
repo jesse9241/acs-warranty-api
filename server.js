@@ -391,15 +391,101 @@ async function save() {
 </html>`);
 });
 app.get("/internal/production", requireInternal, (req, res) => {
-  res.send(getInternalPageHtml({
-    title: "ACS Warranty – Production",
-    stageLabel: "Production Stage",
-    stageId: "productionStage",
-    options: ["", "Que", "Queued", "Complete"],
-    matchField: "productionStage",
-    updateHeader: "Production Stage",
-    buttonText: "Save Production Stage"
-  }));
+  res.send(`<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>ACS Warranty – Production</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; max-width: 700px; margin: auto; }
+    input, select, button { padding: 10px; margin: 6px 0; width: 100%; }
+    .row { border: 1px solid #ddd; padding: 12px; border-radius: 10px; margin-top: 15px; }
+    .ok { color: green; }
+    .err { color: red; }
+    .small { color: #666; font-size: 12px; margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <h2>ACS Warranty – Production</h2>
+  <p class="small">Lookup by <b>Original Order #</b> → Update <b>Production Stage</b></p>
+
+  <label>Original Order #</label>
+  <input id="order" placeholder="Enter order number" />
+  <button onclick="lookup()">Lookup</button>
+
+  <div id="result" class="row" style="display:none;">
+    <div><b>Row:</b> <span id="rowNum"></span></div>
+    <div><b>Status:</b> <span id="status"></span></div>
+    <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
+    <hr/>
+
+    <label>Production Stage</label>
+    <select id="productionStage">
+      <option value=""></option>
+      <option>Que</option>
+      <option>Queued</option>
+      <option>Complete</option>
+    </select>
+
+    <button onclick="save()">Save Production Stage</button>
+    <div id="msg"></div>
+  </div>
+
+<script>
+let currentRow = null;
+
+async function lookup() {
+  const order = document.getElementById("order").value.trim();
+  if (!order) return alert("Enter an order number.");
+
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "lookup", originalOrderNumber: order })
+  });
+
+  const data = await r.json();
+
+  if (data.status === "not_found") return alert("No match found.");
+  if (data.status === "multiple") return alert("Multiple matches found — chooser coming next.");
+  if (data.status !== "ok") return alert("Error: " + (data.message || "Unknown"));
+
+  const match = data.matches[0];
+  currentRow = match.row;
+
+  document.getElementById("result").style.display = "block";
+  document.getElementById("rowNum").innerText = match.row;
+  document.getElementById("status").innerText = match.status || "";
+  document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
+  document.getElementById("productionStage").value = match.productionStage || "";
+  document.getElementById("msg").innerHTML = "";
+}
+
+async function save() {
+  if (!currentRow) return alert("Lookup a claim first.");
+
+  const productionStage = document.getElementById("productionStage").value;
+
+  const r = await fetch("/internal/api/phase2", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      row: currentRow,
+      updates: { "Production Stage": productionStage }
+    })
+  });
+
+  const data = await r.json();
+  const msg = document.getElementById("msg");
+
+  msg.innerHTML = (data.status === "ok")
+    ? "<p class='ok'>Saved ✅</p>"
+    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+}
+</script>
+</body>
+</html>`);
 });
 
 /************************************************************
