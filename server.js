@@ -458,6 +458,14 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
+  const ow =
+  match.originalWarrantyNumber ||
+  match.originalWarranty ||
+  match["Original Warranty #"] ||
+  "";
+
+document.getElementById("owNum").innerText = ow ? ow : "(blank)";
+
   document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
   document.getElementById("productionStage").value = match.productionStage || "";
   document.getElementById("msg").innerHTML = "";
@@ -596,6 +604,8 @@ async function lookup() {
   document.getElementById("result").style.display = "block";
   document.getElementById("rowNum").innerText = match.row;
   document.getElementById("status").innerText = match.status || "";
+  document.getElementById("owNum").innerText = match.originalWarrantyNumber || "(blank)";
+  document.getElementById("iwNum").innerText = match.internalWarrantyNumber || "(blank)";
 
   document.getElementById("qcResult").value = match.qcResult || "";
   document.getElementById("qcFailureNotes").value = match.qcFailureNotes || "";
