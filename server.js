@@ -113,8 +113,8 @@ async function sendCustomerEmail(data) {
 /************************************************************
  * WARRANTY SUBMISSION ENDPOINT (PHASE 1)
  ************************************************************/
-app.post("/warranty", async (req, res) => {
-  try {
+  app.post("/warranty", async (req, res) => {
+    try {
     const r = await fetch(process.env.APPS_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -132,6 +132,37 @@ app.post("/warranty", async (req, res) => {
   } catch (err) {
     console.error("Warranty submission failed:", err);
     res.status(500).json({ error: err.message });
+  }
+});
+/************************************************************
+ * ✅ WARRANTY LOOKUP (GET) — PROXY TO APPS SCRIPT (NO CORS)
+ * URL: /warranty/lookup?order=12345
+ ************************************************************/
+app.get("/warranty/lookup", async (req, res) => {
+  try {
+    const order = String(req.query.order || "").trim();
+    if (!order) return res.status(400).json({ found: false, message: "Missing order" });
+
+    // Calls Apps Script doGet(e) which supports ?order=
+    const url = `${process.env.APPS_SCRIPT_URL}?order=${encodeURIComponent(order)}`;
+
+    const r = await fetch(url);
+    const text = await r.text();
+
+    // Apps Script should return JSON. If it returns HTML, surface it clearly.
+    try {
+      const data = JSON.parse(text);
+      return res.json(data);
+    } catch {
+      return res.status(502).json({
+        found: false,
+        message: "Apps Script did not return JSON",
+        preview: text.slice(0, 200)
+      });
+    }
+  } catch (err) {
+    console.error("LOOKUP ERROR:", err.message);
+    res.status(500).json({ found: false, error: err.message });
   }
 });
 
