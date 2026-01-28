@@ -117,18 +117,14 @@
   </form>
 </div>
 
-<!-- ============================
-     JAVASCRIPT (SAFE + FINAL)
-============================ -->
 <script>
 document.addEventListener("DOMContentLoaded", () => {
-
   const form = document.getElementById("warranty-form");
   if (!form) return;
 
   // ✅ Your Apps Script /exec URL (LOOKUP)
   const APPS_SCRIPT_LOOKUP_URL =
-    "https://script.google.com/macros/s/AKfycbwVc7cQxDswrLOK0Tm62YgnO6V1AYoVZSiPfnBsMy7MVHrqqRAOzxWYBohrfows5SNv/exec";
+  "https://script.google.com/macros/s/AKfycbwH54DJfC1Q4j3ePvXcOZBbdFRz9liH6OD4m4gQVnK8bDTGeYFim5dP5cHT9i9eM44ZIQ/exec";
 
   /* ============================
      SUBMIT HANDLER
@@ -157,13 +153,13 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error("Submit failed");
+      if (!res.ok) throw new Error(await res.text());
 
-      alert("Warranty submitted successfully.");
+      alert("Warranty submitted successfully ✅");
       form.reset();
 
     } catch (err) {
-      console.error(err);
+      console.error("SUBMIT ERROR:", err);
       alert("Submission failed. Please try again.");
     }
   });
@@ -183,22 +179,28 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       try {
-        if (!APPS_SCRIPT_LOOKUP_URL) {
-          alert("Lookup is not configured yet (Apps Script URL missing).");
-          return;
-        }
-
         // ✅ Calls Apps Script doGet using ?order=
         const url = `${APPS_SCRIPT_LOOKUP_URL}?order=${encodeURIComponent(order)}`;
         const res = await fetch(url);
         const data = await res.json();
+
+        // If Apps Script ever returns HTML, we catch it here
+        const text = await res.text();
+
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          console.error("LOOKUP RAW RESPONSE (NOT JSON):", text);
+          alert("Lookup failed (Apps Script returned non-JSON).");
+          return;
+        }
 
         if (!data.found) {
           alert("No match found.");
           return;
         }
 
-        // Prefill fields (only if present)
         if (data.customerName) form.customerName.value = data.customerName;
         if (data.customerEmail) form.customerEmail.value = data.customerEmail;
         if (data.customerPhone) form.customerPhone.value = data.customerPhone;
@@ -207,12 +209,11 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("Lookup successful ✅");
 
       } catch (err) {
-        console.error(err);
+        console.error("LOOKUP ERROR:", err);
         alert("Lookup failed.");
       }
     });
   }
-
 });
 </script>
 
