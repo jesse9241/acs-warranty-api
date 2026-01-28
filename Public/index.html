@@ -123,7 +123,9 @@
 document.addEventListener("DOMContentLoaded", () => {
 
   const form = document.getElementById("warranty-form");
-  if (!form) return;
+  const lookupBtn = document.getElementById("lookupBtn");
+
+  if (!form || !lookupBtn) return;
 
   /* ============================
      SUBMIT HANDLER (Phase 1)
@@ -164,64 +166,59 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================
-     LOOKUP HANDLER (FIXED ✅)
-     Uses Render proxy (no CORS)
+     LOOKUP HANDLER ✅ FIXED
+     Uses Render Proxy Endpoint
   ============================ */
   lookupBtn.addEventListener("click", async () => {
-    alert("LOOKUP CLICKED");
 
-  const order = form.originalOrderNumber.value.trim();
-    
-  if (!order) {
-    alert("Enter or scan an Order # first.");
-    return;
-  }
+    const order = form.originalOrderNumber.value.trim();
 
-  try {
-    // ✅ Lookup through Render API (absolute URL)
-    const res = await fetch(
-      `https://acs-warranty-api.onrender.com/warranty/lookup?order=${encodeURIComponent(order)}`
-    );
-
-    const data = await res.json();
-
-    if (!data.found) {
-      alert("No match found.");
+    if (!order) {
+      alert("Enter or scan an Order # first.");
       return;
     }
 
-   // ✅ Prefill fields (Phase 1 Lookup)
+    try {
+      const res = await fetch(
+        `https://acs-warranty-api.onrender.com/warranty/lookup?order=${encodeURIComponent(order)}`
+      );
 
-if (data.customerName) form.customerName.value = data.customerName;
-if (data.customerEmail) form.customerEmail.value = data.customerEmail;
-if (data.customerPhone) form.customerPhone.value = data.customerPhone;
-if (data.product) form.product.value = data.product;
+      const data = await res.json();
 
-// ✅ NEW fields now supported
-if (data.source) form.source.value = data.source;
+      if (!data.found) {
+        alert("No match found.");
+        return;
+      }
 
-if (data.originalWarrantyNumber)
-  form.originalWarrantyNumber.value = data.originalWarrantyNumber;
+      // ✅ Fill all fields returned
+      if (data.customerName) form.customerName.value = data.customerName;
+      if (data.customerEmail) form.customerEmail.value = data.customerEmail;
+      if (data.customerPhone) form.customerPhone.value = data.customerPhone;
+      if (data.product) form.product.value = data.product;
 
-if (data.upc) form.upc.value = data.upc;
+      if (data.source) form.source.value = data.source;
+      if (data.originalWarrantyNumber)
+        form.originalWarrantyNumber.value = data.originalWarrantyNumber;
 
-if (data.issueDescription)
-  form.issueDescription.value = data.issueDescription;
+      if (data.upc) form.upc.value = data.upc;
+      if (data.issueDescription)
+        form.issueDescription.value = data.issueDescription;
 
-if (data.address)
-  form.customerAddress.value = data.address;
+      if (data.address)
+        form.customerAddress.value = data.address;
 
+      alert(
+        data.duplicateCount > 1
+          ? `Lookup successful ✅ (${data.duplicateCount} matches found)`
+          : "Lookup successful ✅"
+      );
 
-    alert(
-      data.duplicateCount > 1
-        ? `Lookup successful ✅ (${data.duplicateCount} matches found)`
-        : "Lookup successful ✅"
-    );
+    } catch (err) {
+      console.error("LOOKUP ERROR:", err);
+      alert("Lookup failed.");
+    }
+  });
 
-  } catch (err) {
-    console.error("LOOKUP ERROR:", err);
-    alert("Lookup failed.");
-  }
 });
 </script>
 
