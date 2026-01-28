@@ -189,11 +189,27 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // Prefill fields
-    if (data.customerName) form.customerName.value = data.customerName;
-    if (data.customerEmail) form.customerEmail.value = data.customerEmail;
-    if (data.customerPhone) form.customerPhone.value = data.customerPhone;
-    if (data.product) form.product.value = data.product;
+   // ✅ Prefill fields (Phase 1 Lookup)
+
+if (data.customerName) form.customerName.value = data.customerName;
+if (data.customerEmail) form.customerEmail.value = data.customerEmail;
+if (data.customerPhone) form.customerPhone.value = data.customerPhone;
+if (data.product) form.product.value = data.product;
+
+// ✅ NEW fields now supported
+if (data.source) form.source.value = data.source;
+
+if (data.originalWarrantyNumber)
+  form.originalWarrantyNumber.value = data.originalWarrantyNumber;
+
+if (data.upc) form.upc.value = data.upc;
+
+if (data.issueDescription)
+  form.issueDescription.value = data.issueDescription;
+
+if (data.address)
+  form.customerAddress.value = data.address;
+
 
     alert(
       data.duplicateCount > 1
