@@ -168,9 +168,10 @@ document.addEventListener("DOMContentLoaded", () => {
      Uses Render proxy (no CORS)
   ============================ */
   lookupBtn.addEventListener("click", async () => {
+    alert("LOOKUP CLICKED");
 
   const order = form.originalOrderNumber.value.trim();
-
+    
   if (!order) {
     alert("Enter or scan an Order # first.");
     return;
