@@ -172,6 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
   lookupBtn.addEventListener("click", async () => {
 
     const order = form.originalOrderNumber.value.trim();
+    alert("CLICK WORKS");
+    return;
 
     if (!order) {
       alert("Enter or scan an Order # first.");
