@@ -167,41 +167,44 @@ document.addEventListener("DOMContentLoaded", () => {
      LOOKUP HANDLER (FIXED ✅)
      Uses Render proxy (no CORS)
   ============================ */
-  const lookupBtn = document.getElementById("lookupBtn");
-
   lookupBtn.addEventListener("click", async () => {
 
-    const order = form.originalOrderNumber.value.trim();
+  const order = form.originalOrderNumber.value.trim();
 
-    if (!order) {
-      alert("Enter or scan an Order # first.");
+  if (!order) {
+    alert("Enter or scan an Order # first.");
+    return;
+  }
+
+  try {
+    // ✅ Lookup through Render API (absolute URL)
+    const res = await fetch(
+      `https://acs-warranty-api.onrender.com/warranty/lookup?order=${encodeURIComponent(order)}`
+    );
+
+    const data = await res.json();
+
+    if (!data.found) {
+      alert("No match found.");
       return;
     }
 
-    try {
-      // ✅ Lookup through Render proxy
-      const res = await fetch(`/warranty/lookup?order=${encodeURIComponent(order)}`);
-      const data = await res.json();
+    // Prefill fields
+    if (data.customerName) form.customerName.value = data.customerName;
+    if (data.customerEmail) form.customerEmail.value = data.customerEmail;
+    if (data.customerPhone) form.customerPhone.value = data.customerPhone;
+    if (data.product) form.product.value = data.product;
 
-      if (!data.found) {
-        alert("No match found.");
-        return;
-      }
+    alert(
+      data.duplicateCount > 1
+        ? `Lookup successful ✅ (${data.duplicateCount} matches found)`
+        : "Lookup successful ✅"
+    );
 
-      // Prefill fields
-      if (data.customerName) form.customerName.value = data.customerName;
-      if (data.customerEmail) form.customerEmail.value = data.customerEmail;
-      if (data.customerPhone) form.customerPhone.value = data.customerPhone;
-      if (data.product) form.product.value = data.product;
-
-      alert("Lookup successful ✅");
-
-    } catch (err) {
-      console.error("LOOKUP ERROR:", err);
-      alert("Lookup failed.");
-    }
-  });
-
+  } catch (err) {
+    console.error("LOOKUP ERROR:", err);
+    alert("Lookup failed.");
+  }
 });
 </script>
 
