@@ -90,7 +90,9 @@
       <input name="originalOrderNumber" required>
       <button type="button" id="lookupBtn">Lookup</button>
     </div>
-    <div class="hint">Receiving: scan or enter Order #, then click Lookup</div>
+    <div class="hint">
+      Receiving: scan or enter Order #, then click Lookup
+    </div>
 
     <label>Original Warranty #</label>
     <input name="originalWarrantyNumber">
@@ -119,15 +121,12 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+
   const form = document.getElementById("warranty-form");
   if (!form) return;
 
-  // ✅ Your Apps Script /exec URL (LOOKUP)
-  const APPS_SCRIPT_LOOKUP_URL =
-  "https://script.google.com/macros/s/AKfycbwH54DJfC1Q4j3ePvXcOZBbdFRz9liH6OD4m4gQVnK8bDTGeYFim5dP5cHT9i9eM44ZIQ/exec";
-
   /* ============================
-     SUBMIT HANDLER
+     SUBMIT HANDLER (Phase 1)
   ============================ */
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -165,55 +164,44 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ============================
-     LOOKUP (ORDER # ✅)
+     LOOKUP HANDLER (FIXED ✅)
+     Uses Render proxy (no CORS)
   ============================ */
   const lookupBtn = document.getElementById("lookupBtn");
 
-  if (lookupBtn) {
-    lookupBtn.addEventListener("click", async () => {
-      const order = form.originalOrderNumber.value.trim();
+  lookupBtn.addEventListener("click", async () => {
 
-      if (!order) {
-        alert("Enter or scan an Order # first.");
+    const order = form.originalOrderNumber.value.trim();
+
+    if (!order) {
+      alert("Enter or scan an Order # first.");
+      return;
+    }
+
+    try {
+      // ✅ Lookup through Render proxy
+      const res = await fetch(`/warranty/lookup?order=${encodeURIComponent(order)}`);
+      const data = await res.json();
+
+      if (!data.found) {
+        alert("No match found.");
         return;
       }
 
-      try {
-        // ✅ Calls Apps Script doGet using ?order=
-        const url = `${APPS_SCRIPT_LOOKUP_URL}?order=${encodeURIComponent(order)}`;
-        const res = await fetch(url);
-        const data = await res.json();
+      // Prefill fields
+      if (data.customerName) form.customerName.value = data.customerName;
+      if (data.customerEmail) form.customerEmail.value = data.customerEmail;
+      if (data.customerPhone) form.customerPhone.value = data.customerPhone;
+      if (data.product) form.product.value = data.product;
 
-        // If Apps Script ever returns HTML, we catch it here
-        const text = await res.text();
+      alert("Lookup successful ✅");
 
-        let data;
-        try {
-          data = JSON.parse(text);
-        } catch {
-          console.error("LOOKUP RAW RESPONSE (NOT JSON):", text);
-          alert("Lookup failed (Apps Script returned non-JSON).");
-          return;
-        }
+    } catch (err) {
+      console.error("LOOKUP ERROR:", err);
+      alert("Lookup failed.");
+    }
+  });
 
-        if (!data.found) {
-          alert("No match found.");
-          return;
-        }
-
-        if (data.customerName) form.customerName.value = data.customerName;
-        if (data.customerEmail) form.customerEmail.value = data.customerEmail;
-        if (data.customerPhone) form.customerPhone.value = data.customerPhone;
-        if (data.product) form.product.value = data.product;
-
-        alert("Lookup successful ✅");
-
-      } catch (err) {
-        console.error("LOOKUP ERROR:", err);
-        alert("Lookup failed.");
-      }
-    });
-  }
 });
 </script>
 
