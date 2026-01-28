@@ -15,6 +15,13 @@ const PORT = process.env.PORT || 4000;
  ************************************************************/
 app.use(express.json());
 app.use(express.static("Public"));
+app.get("/__version", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "LOOKUP ROUTE VERSION CHECK",
+    timestamp: new Date().toISOString()
+  });
+});
 
 /************************************************************
  * INTERNAL AUTH GATE (PHASE 2 INTERNAL TOOLS)
