@@ -196,7 +196,8 @@ document.addEventListener("DOMContentLoaded", () => {
       form.originalWarrantyNumber.value = data.originalWarrantyNumber || "";
       form.upc.value = data.upc || "";
       form.issueDescription.value = data.issueDescription || "";
-      form.customerAddress.value = data.customerAddress || "";
+      form.customerAddress.value = data.customerAddress || data.address || "";
+
 
       alert("Lookup successful ✅");
 
