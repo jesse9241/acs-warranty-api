@@ -127,9 +127,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !lookupBtn) return;
 
-  /* ============================
-     SUBMIT HANDLER (Phase 1)
-  ============================ */
+  // ============================
+  // SUBMIT WARRANTY
+  // ============================
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -161,22 +161,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (err) {
       console.error("SUBMIT ERROR:", err);
-      alert("Submission failed. Please try again.");
+      alert("Submission failed.");
     }
   });
 
-  /* ============================
-     LOOKUP HANDLER ✅ FIXED
-     Uses Render Proxy Endpoint
-  ============================ */
+  // ============================
+  // LOOKUP BUTTON
+  // ============================
   lookupBtn.addEventListener("click", async () => {
 
     const order = form.originalOrderNumber.value.trim();
-    alert("CLICK WORKS");
-    return;
-
     if (!order) {
-      alert("Enter or scan an Order # first.");
+      alert("Enter Order # first.");
       return;
     }
 
@@ -192,28 +188,17 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // ✅ Fill all fields returned
-      if (data.customerName) form.customerName.value = data.customerName;
-      if (data.customerEmail) form.customerEmail.value = data.customerEmail;
-      if (data.customerPhone) form.customerPhone.value = data.customerPhone;
-      if (data.product) form.product.value = data.product;
+      form.customerName.value = data.customerName || "";
+      form.customerEmail.value = data.customerEmail || "";
+      form.customerPhone.value = data.customerPhone || "";
+      form.product.value = data.product || "";
+      form.source.value = data.source || "";
+      form.originalWarrantyNumber.value = data.originalWarrantyNumber || "";
+      form.upc.value = data.upc || "";
+      form.issueDescription.value = data.issueDescription || "";
+      form.customerAddress.value = data.customerAddress || "";
 
-      if (data.source) form.source.value = data.source;
-      if (data.originalWarrantyNumber)
-        form.originalWarrantyNumber.value = data.originalWarrantyNumber;
-
-      if (data.upc) form.upc.value = data.upc;
-      if (data.issueDescription)
-        form.issueDescription.value = data.issueDescription;
-
-      if (data.address)
-        form.customerAddress.value = data.address;
-
-      alert(
-        data.duplicateCount > 1
-          ? `Lookup successful ✅ (${data.duplicateCount} matches found)`
-          : "Lookup successful ✅"
-      );
+      alert("Lookup successful ✅");
 
     } catch (err) {
       console.error("LOOKUP ERROR:", err);
@@ -223,6 +208,3 @@ document.addEventListener("DOMContentLoaded", () => {
 
 });
 </script>
-
-</body>
-</html>
