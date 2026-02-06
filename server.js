@@ -184,11 +184,6 @@ app.get("/warranty/lookup", async (req, res) => {
     res.status(500).json({ status: "error", error: err.message });
   }
 });
-```
-
-**Also add to your `.env` file:**
-```
-PHASE2_KEY=acs_phase2_2026_change_me
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
