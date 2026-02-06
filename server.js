@@ -145,33 +145,50 @@ async function sendCustomerEmail(data) {
  * ✅ WARRANTY LOOKUP (GET) — PROXY TO APPS SCRIPT (NO CORS)
  * URL: /warranty/lookup?order=12345
  ************************************************************/
+/************************************************************
+ * ✅ WARRANTY LOOKUP — PROXY TO APPS SCRIPT (FIXED)
+ * URL: /warranty/lookup?order=12345
+ ************************************************************/
 app.get("/warranty/lookup", async (req, res) => {
   try {
     const order = String(req.query.order || "").trim();
-    if (!order) return res.status(400).json({ found: false, message: "Missing order" });
+    if (!order) return res.status(400).json({ status: "error", message: "Missing order" });
 
-    // Calls Apps Script doGet(e) which supports ?order=
-    const url = `${process.env.APPS_SCRIPT_URL}?order=${encodeURIComponent(order)}`;
+    // Call Apps Script with POST and the phase2 key
+    const payload = {
+      action: "lookup",
+      key: process.env.PHASE2_KEY || "acs_phase2_2026_change_me",
+      originalOrderNumber: order
+    };
 
-    const r = await fetch(url);
+    const r = await fetch(process.env.APPS_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
     const text = await r.text();
 
-    // Apps Script should return JSON. If it returns HTML, surface it clearly.
     try {
       const data = JSON.parse(text);
       return res.json(data);
     } catch {
       return res.status(502).json({
-        found: false,
+        status: "error",
         message: "Apps Script did not return JSON",
         preview: text.slice(0, 200)
       });
     }
   } catch (err) {
     console.error("LOOKUP ERROR:", err.message);
-    res.status(500).json({ found: false, error: err.message });
+    res.status(500).json({ status: "error", error: err.message });
   }
 });
+```
+
+**Also add to your `.env` file:**
+```
+PHASE2_KEY=acs_phase2_2026_change_me
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
