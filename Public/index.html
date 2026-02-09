@@ -52,10 +52,6 @@
 </head>
 
 <body>
-  <div style="background:red;color:white;padding:12px;text-align:center;font-weight:bold;">
-  DEPLOY TEST – 0230f14
-</div>
-
 <div class="container">
 
   <!-- LOGO -->
@@ -131,86 +127,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !lookupBtn) return;
 
-  // ============================
-  // SUBMIT WARRANTY
-  // ============================
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  lookupBtn.addEventListener("click", async () => {
+    const order = form.originalOrderNumber.value.trim();
 
-    const payload = {
-      source: form.source.value,
-      customerName: form.customerName.value,
-      customerEmail: form.customerEmail.value,
-      customerPhone: form.customerPhone.value || "",
-      originalOrderNumber: form.originalOrderNumber.value,
-      originalWarrantyNumber: form.originalWarrantyNumber.value || "",
-      product: form.product.value,
-      upc: form.upc.value || "",
-      issueDescription: form.issueDescription.value,
-      customerAddress: form.customerAddress.value || "",
-      notes: form.notes.value || ""
-    };
+    if (!order) {
+      alert("Enter Order #, then click Lookup");
+      return;
+    }
 
     try {
-      const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
+      const url =
+        "https://script.google.com/macros/s/AKfycbxGWhPcmIHJ_c4TzbgSA0BqmOdO55szoJ_raNas1BdtOFOXvUmOuSb3wTqnzeheiNIN/exec" +
+        "?action=lookup" +
+        "&key=acs_phase2_2026_change_me" +
+        "&originalOrderNumber=" + encodeURIComponent(order);
 
-      if (!res.ok) throw new Error(await res.text());
+      const res = await fetch(url);
+      const data = await res.json();
 
-      alert("Warranty submitted successfully ✅");
-      form.reset();
+      console.log("LOOKUP RESPONSE:", data);
+
+      if (data.status === "ok") {
+        alert("Lookup successful");
+      } else if (data.status === "multiple") {
+        alert("Multiple matches found");
+      } else {
+        alert("No match found");
+      }
 
     } catch (err) {
-      console.error("SUBMIT ERROR:", err);
-      alert("Submission failed.");
+      console.error("LOOKUP ERROR:", err);
+      alert("Lookup failed");
     }
   });
-
-  // ============================
-  // LOOKUP BUTTON
-  // ============================
-  // LOOKUP BUTTON — FIXED
-lookupBtn.addEventListener("click", async () => {
-  const order = form.originalOrderNumber.value.trim();
-
-  if (!order) {
-    alert("Enter Order #, then click Lookup");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://script.google.com/macros/s/<<YOUR_DEPLOYMENT_ID>>/exec", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "lookup",
-        key: "acs_phase2_2026_change_me",
-        originalOrderNumber: order
-      })
-    });
-
-    const data = await res.json();
-    console.log("LOOKUP RESPONSE:", data);
-
-    if (data.status === "ok") {
-      alert("Lookup successful");
-      // TODO: populate fields from data.matches[0]
-    } else if (data.status === "multiple") {
-      alert("Multiple matches found");
-    } else {
-      alert("No match found");
-    }
-
-  } catch (err) {
-    console.error("LOOKUP ERROR:", err);
-    alert("Lookup failed");
-  }
-});
 
 });
 </script>
