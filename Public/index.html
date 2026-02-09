@@ -127,39 +127,48 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !lookupBtn) return;
 
-  lookupBtn.addEventListener("click", async () => {
-    const order = form.originalOrderNumber.value.trim();
+ lookupBtn.addEventListener("click", async () => {
+  const order = form.originalOrderNumber.value.trim();
 
-    if (!order) {
-      alert("Enter Order #, then click Lookup");
-      return;
+  if (!order) {
+    alert("Enter Order #, then click Lookup");
+    return;
+  }
+
+  try {
+    const res = await fetch(
+      "/warranty/lookup?order=" + encodeURIComponent(order)
+    );
+
+    const data = await res.json();
+    console.log("LOOKUP RESPONSE:", data);
+
+    if (data.status === "ok") {
+      const match = data.matches[0];
+
+      // OPTIONAL auto-fill examples (safe to keep or remove)
+      if (match.originalWarrantyNumber)
+        form.originalWarrantyNumber.value = match.originalWarrantyNumber;
+
+      if (match.product)
+        form.product.value = match.product;
+
+      if (match.upc)
+        form.upc.value = match.upc;
+
+      alert("Order found ✅");
+    } else if (data.status === "multiple") {
+      alert("Multiple matches found");
+    } else {
+      alert("No match found");
     }
 
-    try {
-      const url =
-        "https://script.google.com/macros/s/AKfycbxGWhPcmIHJ_c4TzbgSA0BqmOdO55szoJ_raNas1BdtOFOXvUmOuSb3wTqnzeheiNIN/exec" +
-        "?action=lookup" +
-        "&key=acs_phase2_2026_change_me" +
-        "&originalOrderNumber=" + encodeURIComponent(order);
+  } catch (err) {
+    console.error("LOOKUP ERROR:", err);
+    alert("Lookup failed");
+  }
+});
 
-      const res = await fetch(url);
-      const data = await res.json();
-
-      console.log("LOOKUP RESPONSE:", data);
-
-      if (data.status === "ok") {
-        alert("Lookup successful");
-      } else if (data.status === "multiple") {
-        alert("Multiple matches found");
-      } else {
-        alert("No match found");
-      }
-
-    } catch (err) {
-      console.error("LOOKUP ERROR:", err);
-      alert("Lookup failed");
-    }
-  });
 
 });
 </script>
