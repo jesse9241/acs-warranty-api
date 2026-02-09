@@ -168,44 +168,46 @@ document.addEventListener("DOMContentLoaded", () => {
   // ============================
   // LOOKUP BUTTON
   // ============================
-  lookupBtn.addEventListener("click", async () => {
+  // LOOKUP BUTTON — FIXED
+lookupBtn.addEventListener("click", async () => {
+  const order = document.getElementById("order").value.trim();
 
-    const order = form.originalOrderNumber.value.trim();
-    if (!order) {
-      alert("Enter Order # first.");
-      return;
+  if (!order) {
+    alert("Enter Order #, then click Lookup");
+    return;
+  }
+
+  try {
+    const res = await fetch("https://script.google.com/macros/s/<<YOUR_DEPLOYMENT_ID>>/exec", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        action: "lookup",
+        key: "acs_phase2_2026_change_me",
+        originalOrderNumber: order
+      })
+    });
+
+    const data = await res.json();
+
+    console.log("LOOKUP RESPONSE:", data);
+
+    if (data.status === "ok") {
+      alert("Lookup successful");
+      // TODO: populate fields from data.matches[0]
+    } else if (data.status === "multiple") {
+      alert("Multiple matches found");
+    } else {
+      alert("No match found");
     }
 
-    try {
-      const res = await fetch(
-        `https://acs-warranty-api.onrender.com/warranty/lookup?order=${encodeURIComponent(order)}`
-      );
-
-      const data = await res.json();
-
-      if (!data.found) {
-        alert("No match found.");
-        return;
-      }
-
-      form.customerName.value = data.customerName || "";
-      form.customerEmail.value = data.customerEmail || "";
-      form.customerPhone.value = data.customerPhone || "";
-      form.product.value = data.product || "";
-      form.source.value = data.source || "";
-      form.originalWarrantyNumber.value = data.originalWarrantyNumber || "";
-      form.upc.value = data.upc || "";
-      form.issueDescription.value = data.issueDescription || "";
-      form.customerAddress.value = data.customerAddress || data.address || "";
-
-
-      alert("Lookup successful ✅");
-
-    } catch (err) {
-      console.error("LOOKUP ERROR:", err);
-      alert("Lookup failed.");
-    }
-  });
+  } catch (err) {
+    console.error("LOOKUP ERROR:", err);
+    alert("Lookup failed");
+  }
+});
 
 });
 </script>
