@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ACS Warranty Claim</title>
+  <title>ACS Warranty System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -20,6 +20,42 @@
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
+    
+    /* Tab Buttons */
+    .tab-buttons {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.5rem;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem;
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      color: #0b8457;
+      border-bottom-color: #0b8457;
+    }
+    .tab-btn:hover {
+      background: #f8f9fa;
+    }
+    
+    /* Tab Content */
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
     label {
       display: block;
       font-weight: 600;
@@ -29,6 +65,7 @@
       width: 100%;
       padding: 0.5rem;
       margin-top: 0.25rem;
+      box-sizing: border-box;
     }
     button {
       padding: 0.6rem 0.9rem;
@@ -37,6 +74,10 @@
       border: none;
       cursor: pointer;
       font-size: 0.95rem;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #096b44;
     }
     .row {
       display: flex;
@@ -47,6 +88,52 @@
       font-size: 0.85rem;
       color: #555;
       margin-top: 0.25rem;
+    }
+    
+    /* Lookup Interface */
+    .lookup-search {
+      background: #f8f9fa;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1rem;
+    }
+    .lookup-results {
+      margin-top: 1rem;
+    }
+    .result-card {
+      background: #fff;
+      border: 1px solid #ddd;
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .result-card h4 {
+      margin: 0 0 0.5rem 0;
+      color: #0b8457;
+    }
+    .result-card p {
+      margin: 0.25rem 0;
+      font-size: 0.9rem;
+    }
+    .message {
+      padding: 0.75rem;
+      border-radius: 4px;
+      margin-top: 1rem;
+    }
+    .message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .message.info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
     }
   </style>
 </head>
@@ -63,133 +150,263 @@
     />
   </div>
 
-  <h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
+  <!-- TAB BUTTONS -->
+  <div class="tab-buttons">
+    <button class="tab-btn active" data-tab="intake">New Intake</button>
+    <button class="tab-btn" data-tab="lookup">Look Up Order</button>
+  </div>
 
-  <form id="warranty-form">
+  <!-- NEW INTAKE TAB -->
+  <div id="intake-tab" class="tab-content active">
+    <h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
 
-    <label>Customer Name *</label>
-    <input name="customerName" required>
+    <form id="warranty-form">
 
-    <label>Email *</label>
-    <input type="email" name="customerEmail" required>
+      <label>Customer Name *</label>
+      <input name="customerName" required>
 
-    <label>Phone</label>
-    <input name="customerPhone">
+      <label>Email *</label>
+      <input type="email" name="customerEmail" required>
 
-    <label>Source *</label>
-    <select name="source" required>
-      <option value="">Select</option>
-      <option>Shopify</option>
-      <option>eBay</option>
-      <option>Walk-in</option>
-      <option>Other</option>
-    </select>
+      <label>Phone</label>
+      <input name="customerPhone">
 
-    <label>Original Order # *</label>
-    <div class="row">
-      <input id="order" name="originalOrderNumber" required>
-      <button type="button" id="lookupBtn">Lookup</button>
+      <label>Source *</label>
+      <select name="source" required>
+        <option value="">Select</option>
+        <option>Shopify</option>
+        <option>eBay</option>
+        <option>Walk-in</option>
+        <option>Other</option>
+      </select>
+
+      <label>Original Order # *</label>
+      <input name="originalOrderNumber" required>
+
+      <label>Original Warranty #</label>
+      <input name="originalWarrantyNumber">
+
+      <label>Product *</label>
+      <input name="product" required>
+
+      <label>UPC</label>
+      <input name="upc">
+
+      <label>Issue *</label>
+      <textarea name="issueDescription" required></textarea>
+
+      <label>Address</label>
+      <textarea name="customerAddress"></textarea>
+
+      <label>Notes</label>
+      <textarea name="notes"></textarea>
+
+      <button type="submit" style="margin-top:1rem;width:100%;">
+        Submit Warranty
+      </button>
+
+    </form>
+  </div>
+
+  <!-- LOOK UP ORDER TAB -->
+  <div id="lookup-tab" class="tab-content">
+    <h2 style="text-align:center;margin-top:0;">Look Up Order</h2>
+
+    <div class="lookup-search">
+      <label>Search by Original Order #</label>
+      <div class="row">
+        <input id="lookup-order-input" type="text" placeholder="Enter order number">
+        <button id="lookup-search-btn">Search</button>
+      </div>
     </div>
-    <div class="hint">
-      Receiving: scan or enter Order #, then click Lookup
-    </div>
 
-    <label>Original Warranty #</label>
-    <input name="originalWarrantyNumber">
+    <div id="lookup-message"></div>
+    <div id="lookup-results" class="lookup-results"></div>
+  </div>
 
-    <label>Product *</label>
-    <input name="product" required>
-
-    <label>UPC</label>
-    <input name="upc">
-
-    <label>Issue *</label>
-    <textarea name="issueDescription" required></textarea>
-
-    <label>Address</label>
-    <textarea name="customerAddress"></textarea>
-
-    <label>Notes</label>
-    <textarea name="notes"></textarea>
-
-    <button type="submit" style="margin-top:1rem;width:100%;">
-      Submit Warranty
-    </button>
-
-  </form>
 </div>
 
 <script>
+// API Configuration
+const API_URL = 'const API_URL = '/warranty';';
+const API_KEY = 'acs_phase2_2026_change_me';
+
 document.addEventListener("DOMContentLoaded", () => {
 
-  const form = document.getElementById("warranty-form");
-  const lookupBtn = document.getElementById("lookupBtn");
+  // Tab Switching
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
 
-  if (!form || !lookupBtn) return;
-
-  lookupBtn.addEventListener("click", async () => {
-    const order = form.originalOrderNumber.value.trim();
-
-    if (!order) {
-      alert("Enter Order #, then click Lookup");
-      return;
-    }
-
-    try {
-      const res = await fetch(
-        "/warranty/lookup?order=" + encodeURIComponent(order)
-      );
-
-      const data = await res.json();
-      console.log("LOOKUP RESPONSE:", data);
-
-      if (data.status === "ok") {
-        const match = data.matches[0];
-
-        // ✅ FULL AUTO-FILL
-        if (match.customerName)
-          form.customerName.value = match.customerName;
-
-        if (match.customerEmail)
-          form.customerEmail.value = match.customerEmail;
-
-        if (match.customerPhone)
-          form.customerPhone.value = match.customerPhone;
-
-        if (match.source)
-          form.source.value = match.source;
-
-        if (match.originalWarrantyNumber)
-          form.originalWarrantyNumber.value = match.originalWarrantyNumber;
-
-        if (match.product)
-          form.product.value = match.product;
-
-        if (match.upc)
-          form.upc.value = match.upc;
-
-        if (match.issueDescription)
-          form.issueDescription.value = match.issueDescription;
-
-        if (match.customerAddress)
-          form.customerAddress.value = match.customerAddress;
-
-        alert("Order found ✅");
-      }
-      else if (data.status === "multiple") {
-        alert("Multiple matches found");
-      }
-      else {
-        alert("No match found");
-      }
-
-    } catch (err) {
-      console.error("LOOKUP ERROR:", err);
-      alert("Lookup failed");
-    }
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const targetTab = btn.dataset.tab;
+      
+      // Update button states
+      tabButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      
+      // Update content visibility
+      tabContents.forEach(content => {
+        if (content.id === targetTab + '-tab') {
+          content.classList.add('active');
+        } else {
+          content.classList.remove('active');
+        }
+      });
+    });
   });
 
+  // ==========================================
+  // NEW INTAKE FORM SUBMISSION
+  // ==========================================
+  const form = document.getElementById("warranty-form");
+  
+  if (form) {
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const formData = new FormData(form);
+      const payload = {};
+      formData.forEach((value, key) => {
+        payload[key] = value;
+      });
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        
+        if (data.status === "ok") {
+          alert("✅ Warranty submitted successfully!");
+          form.reset();
+        } else {
+          alert("❌ Error: " + (data.message || "Submission failed"));
+        }
+
+      } catch (err) {
+        console.error("SUBMIT ERROR:", err);
+        alert("❌ Submission failed. Check console for details.");
+      }
+    });
+  }
+
+  // ==========================================
+  // LOOKUP FUNCTIONALITY
+  // ==========================================
+  const lookupBtn = document.getElementById("lookup-search-btn");
+  const lookupInput = document.getElementById("lookup-order-input");
+  const lookupMessage = document.getElementById("lookup-message");
+  const lookupResults = document.getElementById("lookup-results");
+
+  if (lookupBtn && lookupInput) {
+    lookupBtn.addEventListener("click", async () => {
+      const orderNum = lookupInput.value.trim();
+
+      if (!orderNum) {
+        showMessage("Please enter an order number", "error");
+        return;
+      }
+
+      // Clear previous results
+      lookupResults.innerHTML = "";
+      showMessage("Searching...", "info");
+
+      try {
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'lookup',
+            key: API_KEY,
+            originalOrderNumber: orderNum
+          })
+        });
+
+        const data = await res.json();
+        console.log("LOOKUP RESPONSE:", data);
+
+        if (data.status === "ok" && data.matches && data.matches.length > 0) {
+          showMessage(`✅ Found ${data.matches.length} match(es)`, "success");
+          displayResults(data.matches);
+        } else if (data.status === "multiple") {
+          showMessage(`⚠️ Found ${data.matches.length} matches`, "info");
+          displayResults(data.matches);
+        } else if (data.status === "not_found") {
+          showMessage("❌ No order found with that number", "error");
+          console.log("Debug info:", data.debug);
+        } else {
+          showMessage("❌ " + (data.message || "Lookup failed"), "error");
+        }
+
+      } catch (err) {
+        console.error("LOOKUP ERROR:", err);
+        showMessage("❌ Lookup failed. Check console for details.", "error");
+      }
+    });
+
+    // Allow Enter key to trigger search
+    lookupInput.addEventListener("keypress", (e) => {
+      if (e.key === "Enter") {
+        lookupBtn.click();
+      }
+    });
+  }
+
+  function showMessage(text, type) {
+    lookupMessage.innerHTML = `<div class="message ${type}">${text}</div>`;
+  }
+
+  function displayResults(matches) {
+    lookupResults.innerHTML = matches.map(match => `
+      <div class="result-card">
+        <h4>${match.customerName || 'N/A'}</h4>
+        <p><strong>Order #:</strong> ${match.originalOrderNumber || 'N/A'}</p>
+        <p><strong>Warranty #:</strong> ${match.originalWarrantyNumber || 'N/A'}</p>
+        <p><strong>Product:</strong> ${match.product || 'N/A'}</p>
+        <p><strong>UPC:</strong> ${match.upc || 'N/A'}</p>
+        <p><strong>Email:</strong> ${match.customerEmail || 'N/A'}</p>
+        <p><strong>Phone:</strong> ${match.customerPhone || 'N/A'}</p>
+        <p><strong>Source:</strong> ${match.source || 'N/A'}</p>
+        ${match.issueDescription ? `<p><strong>Issue:</strong> ${match.issueDescription}</p>` : ''}
+        ${match.customerAddress ? `<p><strong>Address:</strong> ${match.customerAddress}</p>` : ''}
+        <button onclick="populateForm(${match.row}, '${escapeQuotes(match.customerName)}', '${escapeQuotes(match.customerEmail)}', '${escapeQuotes(match.customerPhone)}', '${escapeQuotes(match.source)}', '${escapeQuotes(match.originalOrderNumber)}', '${escapeQuotes(match.originalWarrantyNumber)}', '${escapeQuotes(match.product)}', '${escapeQuotes(match.upc)}', '${escapeQuotes(match.issueDescription)}', '${escapeQuotes(match.customerAddress)}')" 
+                style="margin-top:0.5rem;width:100%;">
+          Load into Form
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function escapeQuotes(str) {
+    return (str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
+  }
+
 });
+
+// Global function to populate form (called from buttons)
+function populateForm(row, customerName, customerEmail, customerPhone, source, orderNum, warrantyNum, product, upc, issue, address) {
+  const form = document.getElementById("warranty-form");
+  
+  form.customerName.value = customerName || '';
+  form.customerEmail.value = customerEmail || '';
+  form.customerPhone.value = customerPhone || '';
+  form.source.value = source || '';
+  form.originalOrderNumber.value = orderNum || '';
+  form.originalWarrantyNumber.value = warrantyNum || '';
+  form.product.value = product || '';
+  form.upc.value = upc || '';
+  form.issueDescription.value = issue || '';
+  form.customerAddress.value = address || '';
+  
+  // Switch to intake tab
+  document.querySelector('.tab-btn[data-tab="intake"]').click();
+  
+  alert('✅ Order loaded into form');
+}
 </script>
 </body>
 </html>
