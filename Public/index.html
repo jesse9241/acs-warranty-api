@@ -127,48 +127,69 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!form || !lookupBtn) return;
 
- lookupBtn.addEventListener("click", async () => {
-  const order = form.originalOrderNumber.value.trim();
+  lookupBtn.addEventListener("click", async () => {
+    const order = form.originalOrderNumber.value.trim();
 
-  if (!order) {
-    alert("Enter Order #, then click Lookup");
-    return;
-  }
-
-  try {
-    const res = await fetch(
-      "/warranty/lookup?order=" + encodeURIComponent(order)
-    );
-
-    const data = await res.json();
-    console.log("LOOKUP RESPONSE:", data);
-
-    if (data.status === "ok") {
-      const match = data.matches[0];
-
-      // OPTIONAL auto-fill examples (safe to keep or remove)
-      if (match.originalWarrantyNumber)
-        form.originalWarrantyNumber.value = match.originalWarrantyNumber;
-
-      if (match.product)
-        form.product.value = match.product;
-
-      if (match.upc)
-        form.upc.value = match.upc;
-
-      alert("Order found ✅");
-    } else if (data.status === "multiple") {
-      alert("Multiple matches found");
-    } else {
-      alert("No match found");
+    if (!order) {
+      alert("Enter Order #, then click Lookup");
+      return;
     }
 
-  } catch (err) {
-    console.error("LOOKUP ERROR:", err);
-    alert("Lookup failed");
-  }
-});
+    try {
+      const res = await fetch(
+        "/warranty/lookup?order=" + encodeURIComponent(order)
+      );
 
+      const data = await res.json();
+      console.log("LOOKUP RESPONSE:", data);
+
+      if (data.status === "ok") {
+        const match = data.matches[0];
+
+        // ✅ FULL AUTO-FILL
+        if (match.customerName)
+          form.customerName.value = match.customerName;
+
+        if (match.customerEmail)
+          form.customerEmail.value = match.customerEmail;
+
+        if (match.customerPhone)
+          form.customerPhone.value = match.customerPhone;
+
+        if (match.source)
+          form.source.value = match.source;
+
+        if (match.originalWarrantyNumber)
+          form.originalWarrantyNumber.value = match.originalWarrantyNumber;
+
+        if (match.product)
+          form.product.value = match.product;
+
+        if (match.upc)
+          form.upc.value = match.upc;
+
+        if (match.issueDescription)
+          form.issueDescription.value = match.issueDescription;
+
+        if (match.customerAddress)
+          form.customerAddress.value = match.customerAddress;
+
+        alert("Order found ✅");
+      }
+      else if (data.status === "multiple") {
+        alert("Multiple matches found");
+      }
+      else {
+        alert("No match found");
+      }
+
+    } catch (err) {
+      console.error("LOOKUP ERROR:", err);
+      alert("Lookup failed");
+    }
+  });
 
 });
 </script>
+</body>
+</html>
