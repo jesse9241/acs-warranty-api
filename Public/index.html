@@ -20,146 +20,64 @@
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
-    
-    /* Tab Buttons */
     .tab-buttons {
       display: flex;
-      gap: 0;
-      margin-bottom: 1.5rem;
       border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 1rem;
     }
     .tab-btn {
       flex: 1;
       padding: 0.75rem;
-      background: transparent;
       border: none;
-      border-bottom: 3px solid transparent;
+      background: none;
       cursor: pointer;
-      font-size: 1rem;
       font-weight: 600;
       color: #666;
-      transition: all 0.2s;
     }
     .tab-btn.active {
       color: #0b8457;
-      border-bottom-color: #0b8457;
+      border-bottom: 3px solid #0b8457;
     }
-    .tab-btn:hover {
-      background: #f8f9fa;
-    }
-    
-    /* Tab Content */
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-    
-    label {
-      display: block;
-      font-weight: 600;
-      margin-top: 0.75rem;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    label { font-weight: 600; margin-top: .75rem; display:block; }
     input, textarea, select {
       width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.25rem;
-      box-sizing: border-box;
+      padding: .5rem;
+      margin-top: .25rem;
     }
     button {
-      padding: 0.6rem 0.9rem;
       background: #0b8457;
       color: #fff;
       border: none;
+      padding: .6rem;
       cursor: pointer;
-      font-size: 0.95rem;
-      border-radius: 4px;
-    }
-    button:hover {
-      background: #096b44;
-    }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .hint {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 0.25rem;
-    }
-    
-    /* Lookup Interface */
-    .lookup-search {
-      background: #f8f9fa;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 1rem;
-    }
-    .lookup-results {
+      width: 100%;
       margin-top: 1rem;
     }
-    .result-card {
-      background: #fff;
-      border: 1px solid #ddd;
-      padding: 1rem;
-      border-radius: 6px;
-      margin-bottom: 0.75rem;
-    }
-    .result-card h4 {
-      margin: 0 0 0.5rem 0;
-      color: #0b8457;
-    }
-    .result-card p {
-      margin: 0.25rem 0;
-      font-size: 0.9rem;
-    }
-    .message {
-      padding: 0.75rem;
-      border-radius: 4px;
-      margin-top: 1rem;
-    }
-    .message.success {
-      background: #d4edda;
-      color: #155724;
-      border: 1px solid #c3e6cb;
-    }
-    .message.error {
-      background: #f8d7da;
-      color: #721c24;
-      border: 1px solid #f5c6cb;
-    }
-    .message.info {
-      background: #d1ecf1;
-      color: #0c5460;
-      border: 1px solid #bee5eb;
-    }
+    .row { display: flex; gap: 8px; }
+    .message { margin-top: 1rem; padding: .75rem; border-radius: 4px; }
+    .success { background:#d4edda; }
+    .error { background:#f8d7da; }
+    .info { background:#d1ecf1; }
   </style>
 </head>
 
 <body>
 <div class="container">
 
-  <!-- LOGO -->
-  <div style="text-align:center; margin-bottom:1.25rem;">
-    <img
-      src="/logo.png"
-      alt="Automotive Circuit Solutions"
-      style="max-width:260px;width:100%;height:auto;display:block;margin:0 auto;"
-    />
+  <div style="text-align:center;margin-bottom:1rem;">
+    <img src="/logo.png" style="max-width:260px;width:100%;">
   </div>
 
-  <!-- TAB BUTTONS -->
   <div class="tab-buttons">
     <button class="tab-btn active" data-tab="intake">New Intake</button>
     <button class="tab-btn" data-tab="lookup">Look Up Order</button>
   </div>
 
-  <!-- NEW INTAKE TAB -->
+  <!-- ================= INTAKE TAB ================= -->
   <div id="intake-tab" class="tab-content active">
-    <h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
-
     <form id="warranty-form">
 
       <label>Customer Name *</label>
@@ -201,212 +119,75 @@
       <label>Notes</label>
       <textarea name="notes"></textarea>
 
-      <button type="submit" style="margin-top:1rem;width:100%;">
-        Submit Warranty
-      </button>
-
+      <button type="submit">Submit Warranty</button>
     </form>
   </div>
 
-  <!-- LOOK UP ORDER TAB -->
+  <!-- ================= LOOKUP TAB ================= -->
   <div id="lookup-tab" class="tab-content">
-    <h2 style="text-align:center;margin-top:0;">Look Up Order</h2>
-
-    <div class="lookup-search">
-      <label>Search by Original Order #</label>
-      <div class="row">
-        <input id="lookup-order-input" type="text" placeholder="Enter order number">
-        <button id="lookup-search-btn">Search</button>
-      </div>
+    <label>Search by Original Order #</label>
+    <div class="row">
+      <input id="lookup-order">
+      <button id="lookup-btn" style="width:auto;">Lookup</button>
     </div>
-
-    <div id="lookup-message"></div>
-    <div id="lookup-results" class="lookup-results"></div>
+    <div id="lookup-msg"></div>
+    <div id="lookup-results"></div>
   </div>
 
 </div>
 
 <script>
-// API Configuration
-const API_URL = 'const API_URL = '/warranty';';
-const API_KEY = 'acs_phase2_2026_change_me';
+const API_URL = "https://script.google.com/a/macros/automotivecircuitsolutions.com/s/AKfycbwH54DJfC1Q4j3ePvXcOZBbdFRz9liH6OD4m4gQVnK8bDTGeYFim5dP5cHT9i9eM44ZIQ/exec";
+const API_KEY = "acs_phase2_2026_change_me";
 
-document.addEventListener("DOMContentLoaded", () => {
-
-  // Tab Switching
-  const tabButtons = document.querySelectorAll('.tab-btn');
-  const tabContents = document.querySelectorAll('.tab-content');
-
-  tabButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const targetTab = btn.dataset.tab;
-      
-      // Update button states
-      tabButtons.forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      
-      // Update content visibility
-      tabContents.forEach(content => {
-        if (content.id === targetTab + '-tab') {
-          content.classList.add('active');
-        } else {
-          content.classList.remove('active');
-        }
-      });
-    });
-  });
-
-  // ==========================================
-  // NEW INTAKE FORM SUBMISSION
-  // ==========================================
-  const form = document.getElementById("warranty-form");
-  
-  if (form) {
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const formData = new FormData(form);
-      const payload = {};
-      formData.forEach((value, key) => {
-        payload[key] = value;
-      });
-
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        const data = await res.json();
-        
-        if (data.status === "ok") {
-          alert("✅ Warranty submitted successfully!");
-          form.reset();
-        } else {
-          alert("❌ Error: " + (data.message || "Submission failed"));
-        }
-
-      } catch (err) {
-        console.error("SUBMIT ERROR:", err);
-        alert("❌ Submission failed. Check console for details.");
-      }
-    });
-  }
-
-  // ==========================================
-  // LOOKUP FUNCTIONALITY
-  // ==========================================
-  const lookupBtn = document.getElementById("lookup-search-btn");
-  const lookupInput = document.getElementById("lookup-order-input");
-  const lookupMessage = document.getElementById("lookup-message");
-  const lookupResults = document.getElementById("lookup-results");
-
-  if (lookupBtn && lookupInput) {
-    lookupBtn.addEventListener("click", async () => {
-      const orderNum = lookupInput.value.trim();
-
-      if (!orderNum) {
-        showMessage("Please enter an order number", "error");
-        return;
-      }
-
-      // Clear previous results
-      lookupResults.innerHTML = "";
-      showMessage("Searching...", "info");
-
-      try {
-        const res = await fetch(API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'lookup',
-            key: API_KEY,
-            originalOrderNumber: orderNum
-          })
-        });
-
-        const data = await res.json();
-        console.log("LOOKUP RESPONSE:", data);
-
-        if (data.status === "ok" && data.matches && data.matches.length > 0) {
-          showMessage(`✅ Found ${data.matches.length} match(es)`, "success");
-          displayResults(data.matches);
-        } else if (data.status === "multiple") {
-          showMessage(`⚠️ Found ${data.matches.length} matches`, "info");
-          displayResults(data.matches);
-        } else if (data.status === "not_found") {
-          showMessage("❌ No order found with that number", "error");
-          console.log("Debug info:", data.debug);
-        } else {
-          showMessage("❌ " + (data.message || "Lookup failed"), "error");
-        }
-
-      } catch (err) {
-        console.error("LOOKUP ERROR:", err);
-        showMessage("❌ Lookup failed. Check console for details.", "error");
-      }
-    });
-
-    // Allow Enter key to trigger search
-    lookupInput.addEventListener("keypress", (e) => {
-      if (e.key === "Enter") {
-        lookupBtn.click();
-      }
-    });
-  }
-
-  function showMessage(text, type) {
-    lookupMessage.innerHTML = `<div class="message ${type}">${text}</div>`;
-  }
-
-  function displayResults(matches) {
-    lookupResults.innerHTML = matches.map(match => `
-      <div class="result-card">
-        <h4>${match.customerName || 'N/A'}</h4>
-        <p><strong>Order #:</strong> ${match.originalOrderNumber || 'N/A'}</p>
-        <p><strong>Warranty #:</strong> ${match.originalWarrantyNumber || 'N/A'}</p>
-        <p><strong>Product:</strong> ${match.product || 'N/A'}</p>
-        <p><strong>UPC:</strong> ${match.upc || 'N/A'}</p>
-        <p><strong>Email:</strong> ${match.customerEmail || 'N/A'}</p>
-        <p><strong>Phone:</strong> ${match.customerPhone || 'N/A'}</p>
-        <p><strong>Source:</strong> ${match.source || 'N/A'}</p>
-        ${match.issueDescription ? `<p><strong>Issue:</strong> ${match.issueDescription}</p>` : ''}
-        ${match.customerAddress ? `<p><strong>Address:</strong> ${match.customerAddress}</p>` : ''}
-        <button onclick="populateForm(${match.row}, '${escapeQuotes(match.customerName)}', '${escapeQuotes(match.customerEmail)}', '${escapeQuotes(match.customerPhone)}', '${escapeQuotes(match.source)}', '${escapeQuotes(match.originalOrderNumber)}', '${escapeQuotes(match.originalWarrantyNumber)}', '${escapeQuotes(match.product)}', '${escapeQuotes(match.upc)}', '${escapeQuotes(match.issueDescription)}', '${escapeQuotes(match.customerAddress)}')" 
-                style="margin-top:0.5rem;width:100%;">
-          Load into Form
-        </button>
-      </div>
-    `).join('');
-  }
-
-  function escapeQuotes(str) {
-    return (str || '').replace(/'/g, "\\'").replace(/"/g, '\\"');
-  }
-
+/* ================= TAB SWITCH ================= */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab + "-tab").classList.add("active");
+  };
 });
 
-// Global function to populate form (called from buttons)
-function populateForm(row, customerName, customerEmail, customerPhone, source, orderNum, warrantyNum, product, upc, issue, address) {
-  const form = document.getElementById("warranty-form");
-  
-  form.customerName.value = customerName || '';
-  form.customerEmail.value = customerEmail || '';
-  form.customerPhone.value = customerPhone || '';
-  form.source.value = source || '';
-  form.originalOrderNumber.value = orderNum || '';
-  form.originalWarrantyNumber.value = warrantyNum || '';
-  form.product.value = product || '';
-  form.upc.value = upc || '';
-  form.issueDescription.value = issue || '';
-  form.customerAddress.value = address || '';
-  
-  // Switch to intake tab
-  document.querySelector('.tab-btn[data-tab="intake"]').click();
-  
-  alert('✅ Order loaded into form');
-}
+/* ================= SUBMIT (FIXED) ================= */
+document.addEventListener("submit", async e => {
+  if (e.target.id !== "warranty-form") return;
+  e.preventDefault();
+
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+  alert(data.status === "ok" ? "✅ Submitted" : "❌ Failed");
+});
+
+/* ================= LOOKUP ================= */
+document.getElementById("lookup-btn").onclick = async () => {
+  const order = document.getElementById("lookup-order").value.trim();
+  if (!order) return alert("Enter order #");
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "lookup",
+      key: API_KEY,
+      originalOrderNumber: order
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("lookup-results").innerHTML =
+    data.status === "ok"
+      ? `<pre>${JSON.stringify(data.matches[0], null, 2)}</pre>`
+      : "No match";
+};
 </script>
 </body>
 </html>
