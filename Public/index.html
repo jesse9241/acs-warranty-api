@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>ACS Warranty Claim</title>
+  <title>ACS Warranty System</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
@@ -20,194 +20,174 @@
       border-radius: 10px;
       box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     }
-    label {
-      display: block;
-      font-weight: 600;
-      margin-top: 0.75rem;
+    .tab-buttons {
+      display: flex;
+      border-bottom: 2px solid #e0e0e0;
+      margin-bottom: 1rem;
     }
+    .tab-btn {
+      flex: 1;
+      padding: 0.75rem;
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: 600;
+      color: #666;
+    }
+    .tab-btn.active {
+      color: #0b8457;
+      border-bottom: 3px solid #0b8457;
+    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    label { font-weight: 600; margin-top: .75rem; display:block; }
     input, textarea, select {
       width: 100%;
-      padding: 0.5rem;
-      margin-top: 0.25rem;
+      padding: .5rem;
+      margin-top: .25rem;
     }
     button {
-      padding: 0.6rem 0.9rem;
       background: #0b8457;
       color: #fff;
       border: none;
+      padding: .6rem;
       cursor: pointer;
-      font-size: 0.95rem;
+      width: 100%;
+      margin-top: 1rem;
     }
-    .row {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .hint {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 0.25rem;
-    }
+    .row { display: flex; gap: 8px; }
+    .message { margin-top: 1rem; padding: .75rem; border-radius: 4px; }
+    .success { background:#d4edda; }
+    .error { background:#f8d7da; }
+    .info { background:#d1ecf1; }
   </style>
 </head>
 
 <body>
 <div class="container">
 
-  <!-- LOGO -->
-  <div style="text-align:center; margin-bottom:1.25rem;">
-    <img
-      src="/logo.png"
-      alt="Automotive Circuit Solutions"
-      style="max-width:260px;width:100%;height:auto;display:block;margin:0 auto;"
-    />
+  <div style="text-align:center;margin-bottom:1rem;">
+    <img src="/logo.png" style="max-width:260px;width:100%;">
   </div>
 
-  <h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
+  <div class="tab-buttons">
+    <button class="tab-btn active" data-tab="intake">New Intake</button>
+    <button class="tab-btn" data-tab="lookup">Look Up Order</button>
+  </div>
 
-  <form id="warranty-form">
+  <!-- ================= INTAKE TAB ================= -->
+  <div id="intake-tab" class="tab-content active">
+    <form id="warranty-form">
 
-    <label>Customer Name *</label>
-    <input name="customerName" required>
+      <label>Customer Name *</label>
+      <input name="customerName" required>
 
-    <label>Email *</label>
-    <input type="email" name="customerEmail" required>
+      <label>Email *</label>
+      <input type="email" name="customerEmail" required>
 
-    <label>Phone</label>
-    <input name="customerPhone">
+      <label>Phone</label>
+      <input name="customerPhone">
 
-    <label>Source *</label>
-    <select name="source" required>
-      <option value="">Select</option>
-      <option>Shopify</option>
-      <option>eBay</option>
-      <option>Walk-in</option>
-      <option>Other</option>
-    </select>
+      <label>Source *</label>
+      <select name="source" required>
+        <option value="">Select</option>
+        <option>Shopify</option>
+        <option>eBay</option>
+        <option>Walk-in</option>
+        <option>Other</option>
+      </select>
 
-    <label>Original Order # *</label>
-    <div class="row">
+      <label>Original Order # *</label>
       <input name="originalOrderNumber" required>
-      <button type="button" id="lookupBtn">Lookup</button>
+
+      <label>Original Warranty #</label>
+      <input name="originalWarrantyNumber">
+
+      <label>Product *</label>
+      <input name="product" required>
+
+      <label>UPC</label>
+      <input name="upc">
+
+      <label>Issue *</label>
+      <textarea name="issueDescription" required></textarea>
+
+      <label>Address</label>
+      <textarea name="customerAddress"></textarea>
+
+      <label>Notes</label>
+      <textarea name="notes"></textarea>
+
+      <button type="submit">Submit Warranty</button>
+    </form>
+  </div>
+
+  <!-- ================= LOOKUP TAB ================= -->
+  <div id="lookup-tab" class="tab-content">
+    <label>Search by Original Order #</label>
+    <div class="row">
+      <input id="lookup-order">
+      <button id="lookup-btn" type="button" style="width:auto;">Lookup</button>
     </div>
-    <div class="hint">
-      Receiving: scan or enter Order #, then click Lookup
-    </div>
+    <div id="lookup-msg"></div>
+    <div id="lookup-results"></div>
+  </div>
 
-    <label>Original Warranty #</label>
-    <input name="originalWarrantyNumber">
-
-    <label>Product *</label>
-    <input name="product" required>
-
-    <label>UPC</label>
-    <input name="upc">
-
-    <label>Issue *</label>
-    <textarea name="issueDescription" required></textarea>
-
-    <label>Address</label>
-    <textarea name="customerAddress"></textarea>
-
-    <label>Notes</label>
-    <textarea name="notes"></textarea>
-
-    <button type="submit" style="margin-top:1rem;width:100%;">
-      Submit Warranty
-    </button>
-
-  </form>
 </div>
 
 <script>
-document.addEventListener("DOMContentLoaded", () => {
+const API_URL = "https://script.google.com/a/macros/automotivecircuitsolutions.com/s/AKfycbwH54DJfC1Q4j3ePvXcOZBbdFRz9liH6OD4m4gQVnK8bDTGeYFim5dP5cHT9i9eM44ZIQ/exec";
+const API_KEY = "acs_phase2_2026_change_me";
 
-  const form = document.getElementById("warranty-form");
-  const lookupBtn = document.getElementById("lookupBtn");
+/* ================= TAB SWITCH ================= */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.tab + "-tab").classList.add("active");
+  };
+});
 
-  if (!form || !lookupBtn) return;
+/* ================= SUBMIT (FIXED) ================= */
+document.addEventListener("submit", async e => {
+  if (e.target.id !== "warranty-form") return;
+  e.preventDefault();
 
-  // ============================
-  // SUBMIT WARRANTY
-  // ============================
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+  const payload = Object.fromEntries(new FormData(e.target).entries());
 
-    const payload = {
-      source: form.source.value,
-      customerName: form.customerName.value,
-      customerEmail: form.customerEmail.value,
-      customerPhone: form.customerPhone.value || "",
-      originalOrderNumber: form.originalOrderNumber.value,
-      originalWarrantyNumber: form.originalWarrantyNumber.value || "",
-      product: form.product.value,
-      upc: form.upc.value || "",
-      issueDescription: form.issueDescription.value,
-      customerAddress: form.customerAddress.value || "",
-      notes: form.notes.value || ""
-    };
-
-    try {
-      const res = await fetch("https://acs-warranty-api.onrender.com/warranty", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-
-      if (!res.ok) throw new Error(await res.text());
-
-      alert("Warranty submitted successfully ✅");
-      form.reset();
-
-    } catch (err) {
-      console.error("SUBMIT ERROR:", err);
-      alert("Submission failed.");
-    }
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload)
   });
 
-  // ============================
-  // LOOKUP BUTTON
-  // ============================
-  // LOOKUP BUTTON — FIXED
-lookupBtn.addEventListener("click", async () => {
-  const order = document.getElementById("order").value.trim();
-
-  if (!order) {
-    alert("Enter Order #, then click Lookup");
-    return;
-  }
-
-  try {
-    const res = await fetch("https://script.google.com/macros/s/<<YOUR_DEPLOYMENT_ID>>/exec", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        action: "lookup",
-        key: "acs_phase2_2026_change_me",
-        originalOrderNumber: order
-      })
-    });
-
-    const data = await res.json();
-
-    console.log("LOOKUP RESPONSE:", data);
-
-    if (data.status === "ok") {
-      alert("Lookup successful");
-      // TODO: populate fields from data.matches[0]
-    } else if (data.status === "multiple") {
-      alert("Multiple matches found");
-    } else {
-      alert("No match found");
-    }
-
-  } catch (err) {
-    console.error("LOOKUP ERROR:", err);
-    alert("Lookup failed");
-  }
+  const data = await res.json();
+  alert(data.status === "ok" ? "✅ Submitted" : "❌ Failed");
 });
 
-});
+/* ================= LOOKUP ================= */
+document.getElementById("lookup-btn").onclick = async () => {
+  const order = document.getElementById("lookup-order").value.trim();
+  if (!order) return alert("Enter order #");
+
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "lookup",
+      key: API_KEY,
+      originalOrderNumber: order
+    })
+  });
+
+  const data = await res.json();
+  document.getElementById("lookup-results").innerHTML =
+    data.status === "ok"
+      ? `<pre>${JSON.stringify(data.matches[0], null, 2)}</pre>
+      : "No match";
+};
 </script>
+</body>
+</html>
