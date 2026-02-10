@@ -6,69 +6,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f4f5f7;
-      margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 600px;
-      margin: 2rem auto;
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 10px;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    }
-    .tab-buttons {
-      display: flex;
-      border-bottom: 2px solid #e0e0e0;
-      margin-bottom: 1rem;
-    }
-    .tab-btn {
-      flex: 1;
-      padding: 0.75rem;
-      border: none;
-      background: none;
-      cursor: pointer;
-      font-weight: 600;
-      color: #666;
-    }
-    .tab-btn.active {
-      color: #0b8457;
-      border-bottom: 3px solid #0b8457;
-    }
-    .tab-content { display: none; }
-    .tab-content.active { display: block; }
-
-    label { font-weight: 600; margin-top: .75rem; display:block; }
-    input, textarea, select {
-      width: 100%;
-      padding: .5rem;
-      margin-top: .25rem;
-    }
-    button {
-      background: #0b8457;
-      color: #fff;
-      border: none;
-      padding: .6rem;
-      cursor: pointer;
-      width: 100%;
-      margin-top: 1rem;
-    }
-    .row { display: flex; gap: 8px; }
-    .message { margin-top: 1rem; padding: .75rem; border-radius: 4px; }
-    .success { background:#d4edda; }
-    .error { background:#f8d7da; }
-    .info { background:#d1ecf1; }
+    body { font-family: system-ui,sans-serif; background:#f4f5f7; margin:0 }
+    .container { max-width:600px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px }
+    .tab-buttons { display:flex; border-bottom:2px solid #e0e0e0; margin-bottom:1rem }
+    .tab-btn { flex:1; padding:.75rem; border:none; background:none; font-weight:600; cursor:pointer }
+    .tab-btn.active { color:#0b8457; border-bottom:3px solid #0b8457 }
+    .tab-content { display:none }
+    .tab-content.active { display:block }
+    label { font-weight:600; display:block; margin-top:.75rem }
+    input,textarea,select { width:100%; padding:.5rem; margin-top:.25rem }
+    button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:pointer; margin-top:1rem }
+    .row { display:flex; gap:8px }
+    .message { margin-top:1rem; padding:.75rem }
   </style>
 </head>
 
 <body>
 <div class="container">
 
-  <div style="text-align:center;margin-bottom:1rem;">
-    <img src="/logo.png" style="max-width:260px;width:100%;">
+  <div style="text-align:center;margin-bottom:1rem">
+    <img src="/logo.png" style="max-width:260px;width:100%">
   </div>
 
   <div class="tab-buttons">
@@ -76,10 +33,9 @@
     <button class="tab-btn" data-tab="lookup">Look Up Order</button>
   </div>
 
-  <!-- ================= INTAKE TAB ================= -->
+  <!-- INTAKE -->
   <div id="intake-tab" class="tab-content active">
     <form id="warranty-form">
-
       <label>Customer Name *</label>
       <input name="customerName" required>
 
@@ -123,24 +79,22 @@
     </form>
   </div>
 
-  <!-- ================= LOOKUP TAB ================= -->
+  <!-- LOOKUP -->
   <div id="lookup-tab" class="tab-content">
     <label>Search by Original Order #</label>
     <div class="row">
       <input id="lookup-order">
-      <button id="lookup-btn" type="button" style="width:auto;">Lookup</button>
+      <button id="lookup-btn" type="button" style="width:auto">Lookup</button>
     </div>
-    <div id="lookup-msg"></div>
     <div id="lookup-results"></div>
   </div>
 
 </div>
 
 <script>
-const API_URL = "https://script.google.com/a/macros/automotivecircuitsolutions.com/s/AKfycbwH54DJfC1Q4j3ePvXcOZBbdFRz9liH6OD4m4gQVnK8bDTGeYFim5dP5cHT9i9eM44ZIQ/exec";
-const API_KEY = "acs_phase2_2026_change_me";
+const API_BASE = "https://acs-warranty-api.onrender.com";
 
-/* ================= TAB SWITCH ================= */
+/* tabs */
 document.querySelectorAll(".tab-btn").forEach(btn => {
   btn.onclick = () => {
     document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
@@ -150,14 +104,12 @@ document.querySelectorAll(".tab-btn").forEach(btn => {
   };
 });
 
-/* ================= SUBMIT (FIXED) ================= */
-document.addEventListener("submit", async e => {
-  if (e.target.id !== "warranty-form") return;
+/* submit */
+document.getElementById("warranty-form").onsubmit = async e => {
   e.preventDefault();
-
   const payload = Object.fromEntries(new FormData(e.target).entries());
 
-  const res = await fetch(API_URL, {
+  const res = await fetch(`${API_BASE}/warranty`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload)
@@ -165,27 +117,19 @@ document.addEventListener("submit", async e => {
 
   const data = await res.json();
   alert(data.status === "ok" ? "✅ Submitted" : "❌ Failed");
-});
+};
 
-/* ================= LOOKUP ================= */
+/* lookup */
 document.getElementById("lookup-btn").onclick = async () => {
   const order = document.getElementById("lookup-order").value.trim();
   if (!order) return alert("Enter order #");
 
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      action: "lookup",
-      key: API_KEY,
-      originalOrderNumber: order
-    })
-  });
-
+  const res = await fetch(`${API_BASE}/warranty/lookup?order=${encodeURIComponent(order)}`);
   const data = await res.json();
+
   document.getElementById("lookup-results").innerHTML =
     data.status === "ok"
-      ? `<pre>${JSON.stringify(data.matches[0], null, 2)}</pre>
+      ? `<pre>${JSON.stringify(data.matches[0], null, 2)}</pre>`
       : "No match";
 };
 </script>
