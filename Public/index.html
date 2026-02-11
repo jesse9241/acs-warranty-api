@@ -1,136 +1,149 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>ACS Warranty System</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>ACS Warranty System</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <style>
-    body { font-family: system-ui,sans-serif; background:#f4f5f7; margin:0 }
-    .container { max-width:600px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px }
-    .tab-buttons { display:flex; border-bottom:2px solid #e0e0e0; margin-bottom:1rem }
-    .tab-btn { flex:1; padding:.75rem; border:none; background:none; font-weight:600; cursor:pointer }
-    .tab-btn.active { color:#0b8457; border-bottom:3px solid #0b8457 }
-    .tab-content { display:none }
-    .tab-content.active { display:block }
-    label { font-weight:600; display:block; margin-top:.75rem }
-    input,textarea,select { width:100%; padding:.5rem; margin-top:.25rem }
-    button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:pointer; margin-top:1rem }
-    .row { display:flex; gap:8px }
-    .message { margin-top:1rem; padding:.75rem }
-  </style>
+<style>
+body { font-family: system-ui, sans-serif; background:#f4f5f7; margin:0; padding:0; }
+.container { max-width:600px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.08); }
+
+.tab-buttons { display:flex; border-bottom:2px solid #e0e0e0; margin-bottom:1rem; }
+.tab-btn { flex:1; padding:.75rem; border:none; background:none; cursor:pointer; font-weight:600; color:#666; }
+.tab-btn.active { color:#0b8457; border-bottom:3px solid #0b8457; }
+
+.tab-content { display:none; }
+.tab-content.active { display:block; }
+
+label { font-weight:600; margin-top:.75rem; display:block; }
+input, textarea, select { width:100%; padding:.5rem; margin-top:.25rem; box-sizing:border-box; }
+button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:pointer; margin-top:1rem; }
+.row { display:flex; gap:8px; }
+.message { margin-top:1rem; padding:.75rem; border-radius:4px; }
+.success { background:#d4edda; }
+.error { background:#f8d7da; }
+.info { background:#d1ecf1; }
+</style>
 </head>
 
 <body>
-<div class="container">
+<div style="background:#000;color:#0f0;padding:10px;font-weight:700;text-align:center;">
+  FINGERPRINT: LOOKUP-RESTORE-2026-02-11
+</div>
 
-  <div style="text-align:center;margin-bottom:1rem">
-    <img src="/logo.png" style="max-width:260px;width:100%">
-  </div>
+  <div class="container">
 
-  <div class="tab-buttons">
-    <button class="tab-btn active" data-tab="intake">New Intake</button>
-    <button class="tab-btn" data-tab="lookup">Look Up Order</button>
-  </div>
+<div style="text-align:center;margin-bottom:1rem;">
+<img src="/logo.png" style="max-width:260px;width:100%;">
+</div>
 
-  <!-- INTAKE -->
-  <div id="intake-tab" class="tab-content active">
-    <form id="warranty-form">
-      <label>Customer Name *</label>
-      <input name="customerName" required>
+<div class="tab-buttons">
+<button class="tab-btn active" data-tab="intake">New Intake</button>
+<button class="tab-btn" data-tab="lookup">Look Up Order</button>
+</div>
 
-      <label>Email *</label>
-      <input type="email" name="customerEmail" required>
+<!-- ================= INTAKE TAB ================= -->
+<div id="intake-tab" class="tab-content active">
+<form id="warranty-form">
 
-      <label>Phone</label>
-      <input name="customerPhone">
+<label>Customer Name *</label>
+<input name="customerName" required>
 
-      <label>Source *</label>
-      <select name="source" required>
-        <option value="">Select</option>
-        <option>Shopify</option>
-        <option>eBay</option>
-        <option>Walk-in</option>
-        <option>Other</option>
-      </select>
+<label>Email *</label>
+<input type="email" name="customerEmail" required>
 
-      <label>Original Order # *</label>
-      <input name="originalOrderNumber" required>
+<label>Phone</label>
+<input name="customerPhone">
 
-      <label>Original Warranty #</label>
-      <input name="originalWarrantyNumber">
+<label>Source *</label>
+<select name="source" required>
+<option value="">Select</option>
+<option>Shopify</option>
+<option>eBay</option>
+<option>Walk-in</option>
+<option>Other</option>
+</select>
 
-      <label>Product *</label>
-      <input name="product" required>
+<label>Original Order # *</label>
+<input name="originalOrderNumber" required>
 
-      <label>UPC</label>
-      <input name="upc">
+<label>Original Warranty #</label>
+<input name="originalWarrantyNumber">
 
-      <label>Issue *</label>
-      <textarea name="issueDescription" required></textarea>
+<label>Product *</label>
+<input name="product" required>
 
-      <label>Address</label>
-      <textarea name="customerAddress"></textarea>
+<label>UPC</label>
+<input name="upc">
 
-      <label>Notes</label>
-      <textarea name="notes"></textarea>
+<label>Issue *</label>
+<textarea name="issueDescription" required></textarea>
 
-      <button type="submit">Submit Warranty</button>
-    </form>
-  </div>
+<label>Address</label>
+<textarea name="customerAddress"></textarea>
 
-  <!-- LOOKUP -->
-  <div id="lookup-tab" class="tab-content">
-    <label>Search by Original Order #</label>
-    <div class="row">
-      <input id="lookup-order">
-      <button id="lookup-btn" type="button" style="width:auto">Lookup</button>
-    </div>
-    <div id="lookup-results"></div>
-  </div>
+<label>Notes</label>
+<textarea name="notes"></textarea>
+
+<button type="submit">Submit Warranty</button>
+</form>
+</div>
+
+<!-- ================= LOOKUP TAB ================= -->
+<div id="lookup-tab" class="tab-content">
+<label>Search by Original Order #</label>
+<div class="row">
+<input id="lookup-order">
+<button id="lookup-btn" type="button">Lookup</button>
+</div>
+<div id="lookup-msg"></div>
+<div id="lookup-results"></div>
+</div>
 
 </div>
 
 <script>
-const API_BASE = "https://acs-warranty-api.onrender.com";
+const API_BASE = "";
 
-/* tabs */
 document.querySelectorAll(".tab-btn").forEach(btn => {
-  btn.onclick = () => {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    document.querySelectorAll(".tab-content").forEach(t => t.classList.remove("active"));
-    btn.classList.add("active");
-    document.getElementById(btn.dataset.tab + "-tab").classList.add("active");
-  };
+btn.onclick = () => {
+document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
+document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
+btn.classList.add("active");
+document.getElementById(btn.dataset.tab+"-tab").classList.add("active");
+};
 });
 
-/* submit */
-document.getElementById("warranty-form").onsubmit = async e => {
-  e.preventDefault();
-  const payload = Object.fromEntries(new FormData(e.target).entries());
+/* ================= SUBMIT ================= */
+document.getElementById("warranty-form").addEventListener("submit", async e=>{
+e.preventDefault();
+const payload = Object.fromEntries(new FormData(e.target).entries());
 
-  const res = await fetch(`${API_BASE}/warranty`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+const res = await fetch("/warranty", {
+method:"POST",
+headers:{ "Content-Type":"application/json" },
+body: JSON.stringify(payload)
+});
 
-  const data = await res.json();
-  alert(data.status === "ok" ? "✅ Submitted" : "❌ Failed");
-};
+const data = await res.json();
+alert(data.status==="ok"?"✅ Submitted":"❌ Failed");
+});
 
-/* lookup */
-document.getElementById("lookup-btn").onclick = async () => {
-  const order = document.getElementById("lookup-order").value.trim();
-  if (!order) return alert("Enter order #");
+/* ================= LOOKUP ================= */
+document.getElementById("lookup-btn").onclick = async ()=>{
+const order = document.getElementById("lookup-order").value.trim();
+if(!order) return alert("Enter order #");
 
-  const res = await fetch(`${API_BASE}/warranty/lookup?order=${encodeURIComponent(order)}`);
-  const data = await res.json();
+const res = await fetch("/warranty/lookup?order="+encodeURIComponent(order));
+const data = await res.json();
 
-  document.getElementById("lookup-results").innerHTML =
-    data.status === "ok"
-      ? `<pre>${JSON.stringify(data.matches[0], null, 2)}</pre>`
-      : "No match";
+if(data.status==="ok"){
+document.getElementById("lookup-results").innerHTML =
+`<pre>${JSON.stringify(data.matches[0],null,2)}</pre>`;
+}else{
+document.getElementById("lookup-results").innerHTML="No match";
+}
 };
 </script>
 </body>
