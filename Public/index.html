@@ -2,49 +2,56 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>ACS Warranty System</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ACS Warranty Claim</title>
 
 <style>
-body { font-family: system-ui, sans-serif; background:#f4f5f7; margin:0; padding:0; }
-.container { max-width:600px; margin:2rem auto; background:#fff; padding:1.5rem; border-radius:10px; box-shadow:0 4px 16px rgba(0,0,0,.08); }
-
-.tab-buttons { display:flex; border-bottom:2px solid #e0e0e0; margin-bottom:1rem; }
-.tab-btn { flex:1; padding:.75rem; border:none; background:none; cursor:pointer; font-weight:600; color:#666; }
-.tab-btn.active { color:#0b8457; border-bottom:3px solid #0b8457; }
-
-.tab-content { display:none; }
-.tab-content.active { display:block; }
-
-label { font-weight:600; margin-top:.75rem; display:block; }
-input, textarea, select { width:100%; padding:.5rem; margin-top:.25rem; box-sizing:border-box; }
-button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:pointer; margin-top:1rem; }
-.row { display:flex; gap:8px; }
-.message { margin-top:1rem; padding:.75rem; border-radius:4px; }
-.success { background:#d4edda; }
-.error { background:#f8d7da; }
-.info { background:#d1ecf1; }
+body {
+  font-family: system-ui, sans-serif;
+  background: #f4f5f7;
+  margin: 0;
+}
+.container {
+  max-width: 600px;
+  margin: 2rem auto;
+  background: #fff;
+  padding: 1.5rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+}
+label { font-weight: 600; display:block; margin-top:.75rem; }
+input, textarea, select {
+  width:100%;
+  padding:.5rem;
+  margin-top:.25rem;
+}
+button {
+  background:#0b8457;
+  color:#fff;
+  border:none;
+  padding:.6rem .9rem;
+  cursor:pointer;
+}
+.row {
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.locked {
+  background:#f0f0f0;
+}
 </style>
 </head>
 
 <body>
-<div style="background:#000;color:#0f0;padding:10px;font-weight:700;text-align:center;">
-  FINGERPRINT: LOOKUP-RESTORE-2026-02-11
-</div>
-
-  <div class="container">
+<div class="container">
 
 <div style="text-align:center;margin-bottom:1rem;">
-<img src="/logo.png" style="max-width:260px;width:100%;">
+  <img src="/logo.png" style="max-width:260px;width:100%;">
 </div>
 
-<div class="tab-buttons">
-<button class="tab-btn active" data-tab="intake">New Intake</button>
-<button class="tab-btn" data-tab="lookup">Look Up Order</button>
-</div>
+<h2 style="text-align:center;margin-top:0;">Warranty Claim</h2>
 
-<!-- ================= INTAKE TAB ================= -->
-<div id="intake-tab" class="tab-content active">
 <form id="warranty-form">
 
 <label>Customer Name *</label>
@@ -66,7 +73,10 @@ button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:poin
 </select>
 
 <label>Original Order # *</label>
-<input name="originalOrderNumber" required>
+<div class="row">
+  <input name="originalOrderNumber" id="order" required>
+  <button type="button" id="lookup-btn">Lookup</button>
+</div>
 
 <label>Original Warranty #</label>
 <input name="originalWarrantyNumber">
@@ -86,65 +96,80 @@ button { background:#0b8457; color:#fff; border:none; padding:.6rem; cursor:poin
 <label>Notes</label>
 <textarea name="notes"></textarea>
 
-<button type="submit">Submit Warranty</button>
+<button type="submit" style="margin-top:1rem;width:100%;">
+Submit Warranty
+</button>
+
 </form>
 </div>
 
-<!-- ================= LOOKUP TAB ================= -->
-<div id="lookup-tab" class="tab-content">
-<label>Search by Original Order #</label>
-<div class="row">
-<input id="lookup-order">
-<button id="lookup-btn" type="button">Lookup</button>
-</div>
-<div id="lookup-msg"></div>
-<div id="lookup-results"></div>
-</div>
-
-</div>
-
 <script>
-const API_BASE = "";
-
-document.querySelectorAll(".tab-btn").forEach(btn => {
-btn.onclick = () => {
-document.querySelectorAll(".tab-btn").forEach(b=>b.classList.remove("active"));
-document.querySelectorAll(".tab-content").forEach(t=>t.classList.remove("active"));
-btn.classList.add("active");
-document.getElementById(btn.dataset.tab+"-tab").classList.add("active");
-};
-});
-
-/* ================= SUBMIT ================= */
-document.getElementById("warranty-form").addEventListener("submit", async e=>{
-e.preventDefault();
-const payload = Object.fromEntries(new FormData(e.target).entries());
-
-const res = await fetch("/warranty", {
-method:"POST",
-headers:{ "Content-Type":"application/json" },
-body: JSON.stringify(payload)
-});
-
-const data = await res.json();
-alert(data.status==="ok"?"✅ Submitted":"❌ Failed");
-});
+const API_BASE = "https://acs-warranty-api.onrender.com";
 
 /* ================= LOOKUP ================= */
-document.getElementById("lookup-btn").onclick = async ()=>{
-const order = document.getElementById("lookup-order").value.trim();
-if(!order) return alert("Enter order #");
+document.getElementById("lookup-btn").onclick = async () => {
+  const order = document.getElementById("order").value.trim();
+  if (!order) return alert("Enter Order #");
 
-const res = await fetch("/warranty/lookup?order="+encodeURIComponent(order));
-const data = await res.json();
+  const res = await fetch(`${API_BASE}/warranty/lookup?order=` + encodeURIComponent(order));
+  const data = await res.json();
 
-if(data.status==="ok"){
-document.getElementById("lookup-results").innerHTML =
-`<pre>${JSON.stringify(data.matches[0],null,2)}</pre>`;
-}else{
-document.getElementById("lookup-results").innerHTML="No match";
-}
+  if (data.status !== "ok" || !data.matches.length) {
+    alert("No match found");
+    return;
+  }
+
+  const m = data.matches[0];
+  const form = document.getElementById("warranty-form");
+
+  form.customerName.value = m.customerName || "";
+  form.customerEmail.value = m.customerEmail || "";
+  form.customerPhone.value = m.customerPhone || "";
+  form.source.value = m.source || "";
+  form.originalWarrantyNumber.value = m.originalWarrantyNumber || "";
+  form.product.value = m.product || "";
+  form.upc.value = m.upc || "";
+  form.issueDescription.value = m.issueDescription || "";
+  form.customerAddress.value = m.customerAddress || "";
+
+  lockField(form.customerName);
+  lockField(form.customerEmail);
+  lockField(form.customerPhone);
+  lockField(form.source);
+  lockField(form.originalWarrantyNumber);
+  lockField(form.product);
+  lockField(form.upc);
+
+  alert("Order found and loaded ✅");
 };
+
+function lockField(field){
+  field.readOnly = true;
+  field.classList.add("locked");
+}
+
+/* ================= SUBMIT ================= */
+document.getElementById("warranty-form").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+
+  const res = await fetch(`${API_BASE}/warranty`, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify(payload)
+  });
+
+  const data = await res.json();
+
+  if (data.status === "ok") {
+    alert("Warranty submitted successfully ✅");
+    e.target.reset();
+  } else {
+    alert("Submission failed ❌");
+  }
+});
 </script>
+
 </body>
 </html>
