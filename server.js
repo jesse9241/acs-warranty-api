@@ -122,7 +122,7 @@ async function sendCustomerEmail(data) {
  ************************************************************/
   app.post("/warranty", async (req, res) => {
     try {
-    const r = await fetch(process.env.APPS_SCRIPT_URL, {
+    const r = await fetch(process.env.PHASE2_SCRIPT_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(req.body)
@@ -152,16 +152,25 @@ async function sendCustomerEmail(data) {
 app.get("/warranty/lookup", async (req, res) => {
   try {
     const order = String(req.query.order || "").trim();
-    if (!order) return res.status(400).json({ status: "error", message: "Missing order" });
+    if (!order) {
+      return res.status(400).json({ status: "error", message: "Missing order" });
+    }
 
-    // Call Apps Script with POST and the phase2 key
+    const scriptUrl = process.env.PHASE2_SCRIPT_URL; // ✅ IMPORTANT
+    if (!scriptUrl) {
+      return res.status(500).json({
+        status: "error",
+        message: "Missing env var PHASE2_SCRIPT_URL"
+      });
+    }
+
     const payload = {
       action: "lookup",
       key: process.env.PHASE2_KEY || "acs_phase2_2026_change_me",
       originalOrderNumber: order
     };
 
-    const r = await fetch(process.env.APPS_SCRIPT_URL, {
+    const r = await fetch(scriptUrl, { // ✅ IMPORTANT
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -170,8 +179,7 @@ app.get("/warranty/lookup", async (req, res) => {
     const text = await r.text();
 
     try {
-      const data = JSON.parse(text);
-      return res.json(data);
+      return res.json(JSON.parse(text));
     } catch {
       return res.status(502).json({
         status: "error",
@@ -180,10 +188,11 @@ app.get("/warranty/lookup", async (req, res) => {
       });
     }
   } catch (err) {
-    console.error("LOOKUP ERROR:", err.message);
-    res.status(500).json({ status: "error", error: err.message });
+    console.error("LOOKUP ERROR:", err);
+    return res.status(500).json({ status: "error", error: err.message });
   }
 });
+
 
 /************************************************************
  * PHASE 2 INTERNAL PROXY API
@@ -465,24 +474,41 @@ app.get("/internal/production", requireInternal, (req, res) => {
   <button onclick="lookup()">Lookup</button>
 
   <div id="result" class="row" style="display:none;">
-    <div><b>Row:</b> <span id="rowNum"></span></div>
-    <div><b>Status:</b> <span id="status"></span></div>
-    <div><b>Original Warranty #:</b> <span id="owNum">(blank)</span></div>
-    <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
+  <div><b>Row:</b> <span id="rowNum"></span></div>
+  <div><b>Status:</b> <span id="status"></span></div>
+  <div><b>Internal Warranty #:</b> <span id="iwNum">(blank)</span></div>
+  <hr/>
 
-    <hr/>
+  <label>Intake Stage</label>
+  <select id="intakeStage">
+    <option value=""></option>
+    <option>Not Started</option>
+    <option>In Intake</option>
+    <option>Intake Complete</option>
+  </select>
 
-    <label>Production Stage</label>
-    <select id="productionStage">
-      <option value=""></option>
-      <option>Que</option>
-      <option>Queued</option>
-      <option>Complete</option>
-    </select>
+  <hr/>
 
-    <button onclick="save()">Save Production Stage</button>
-    <div id="msg"></div>
-  </div>
+  <label>Date Received</label>
+  <input type="date" id="dateReceived">
+
+  <label>New Order #</label>
+  <input type="text" id="newOrderNumber">
+
+  <label>New Warranty #</label>
+  <input type="text" id="newWarrantyNumber">
+
+  <label>Technician Assigned</label>
+  <select id="technicianAssigned">
+    <option value=""></option>
+    <option>Tech 1</option>
+    <option>Tech 2</option>
+    <option>Tech 3</option>
+  </select>
+
+  <button onclick="save()">Save Intake</button>
+  <div id="msg"></div>
+</div>
 
 <script>
 let currentRow = null;
@@ -526,7 +552,11 @@ async function lookup() {
 async function save() {
   if (!currentRow) return alert("Lookup a claim first.");
 
-  const productionStage = document.getElementById("productionStage").value;
+  const intakeStage = document.getElementById("intakeStage").value;
+  const dateReceived = document.getElementById("dateReceived").value;
+  const newOrderNumber = document.getElementById("newOrderNumber").value;
+  const newWarrantyNumber = document.getElementById("newWarrantyNumber").value;
+  const technicianAssigned = document.getElementById("technicianAssigned").value;
 
   const r = await fetch("/internal/api/phase2", {
     method: "POST",
@@ -534,16 +564,26 @@ async function save() {
     body: JSON.stringify({
       action: "update",
       row: currentRow,
-      updates: { "Production Stage": productionStage }
+      updates: {
+        "Intake Stage": intakeStage,
+        "Date Received": dateReceived,
+        "New Order #": newOrderNumber,
+        "New Warranty #": newWarrantyNumber,
+        "Technician Assigned": technicianAssigned
+      }
     })
   });
 
   const data = await r.json();
-  const msg = document.getElementById("msg");
 
-  msg.innerHTML = (data.status === "ok")
-    ? "<p class='ok'>Saved ✅</p>"
-    : "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+  if (data.status !== "ok") {
+    document.getElementById("msg").innerHTML =
+      "<p class='err'>Error: " + (data.message || "Unknown") + "</p>";
+    return;
+  }
+
+  document.getElementById("msg").innerHTML =
+    "<p class='ok'>Saved ✅</p>";
 }
 </script>
 </body>
