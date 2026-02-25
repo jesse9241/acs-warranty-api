@@ -44,6 +44,9 @@ button {
 </head>
 
 <body>
+<div style="background:black;color:lime;padding:8px;text-align:center;font-weight:bold;">
+FORM VERSION: CLEAN-TEST-01
+</div>
 <div class="container">
 
 <div style="text-align:center;margin-bottom:1rem;">
@@ -81,34 +84,40 @@ button {
 <label>Previous Warranty Claim Date</label>
 <input type="date" name="previousWarrantyClaimDate">
 
-<label>Date Received</label>
-<input type="date" name="dateReceived">
-
-<label>New Order #</label>
-<input name="newOrderNumber">
-
-<label>New Warranty #</label>
-<input name="newWarrantyNumber">
-
 <label>Product *</label>
 <input name="product" required>
 
 <label>Issue Description *</label>
 <textarea name="issueDescription" required></textarea>
 
-<label>Technician Assigned</label>
-<select name="technicianAssigned">
-  <option value="">Select Technician</option>
-  <option>Colton Snow</option>
-  <option>Lance Monohan</option>
-  <option>Igor Gantyuk</option>
-  <option>Maxim Procosev</option>
-  <option>unknown</option>
-  <option>Former Employee</option>
-</select>
-
 <label>UPC</label>
 <input name="upc">
+
+<!-- INTERNAL ONLY -->
+<div id="internal-fields" style="display:none; border-top:1px solid #ddd; margin-top:20px; padding-top:15px;">
+
+  <h3>Internal Use Only</h3>
+
+  <label>Date Received</label>
+  <input type="date" name="dateReceived">
+
+  <label>New Order #</label>
+  <input name="newOrderNumber">
+
+  <label>New Warranty #</label>
+  <input name="newWarrantyNumber">
+
+  <label>Technician Assigned</label>
+  <select name="technicianAssigned">
+    <option value=""></option>
+    <option>Colton Snow</option>
+    <option>Lance Monohan</option>
+    <option>Igor Gantyuk</option>
+    <option>Maxim Procosev</option>
+    <option>Other</option>
+  </select>
+
+</div>
 
 <button type="submit" style="margin-top:1rem;width:100%;">
 Submit Warranty
@@ -116,11 +125,20 @@ Submit Warranty
 
 </form>
 
-</form>
 </div>
 
 <script>
 const API_BASE = "https://acs-warranty-api.onrender.com";
+
+/* ================= SHOW INTERNAL FIELDS IF LOGGED IN ================= */
+window.addEventListener("load", function () {
+  if (document.cookie.includes("acs_internal_key=")) {
+    const internalSection = document.getElementById("internal-fields");
+    if (internalSection) {
+      internalSection.style.display = "block";
+    }
+  }
+});
 
 /* ================= LOOKUP ================= */
 document.getElementById("lookup-btn").onclick = async () => {
@@ -139,18 +157,13 @@ document.getElementById("lookup-btn").onclick = async () => {
   const form = document.getElementById("warranty-form");
 
   form.customerName.value = m.customerName || "";
-  form.customerEmail.value = m.customerEmail || "";
-  form.customerPhone.value = m.customerPhone || "";
   form.source.value = m.source || "";
   form.originalWarrantyNumber.value = m.originalWarrantyNumber || "";
   form.product.value = m.product || "";
   form.upc.value = m.upc || "";
   form.issueDescription.value = m.issueDescription || "";
-  form.customerAddress.value = m.customerAddress || "";
 
   lockField(form.customerName);
-  lockField(form.customerEmail);
-  lockField(form.customerPhone);
   lockField(form.source);
   lockField(form.originalWarrantyNumber);
   lockField(form.product);
