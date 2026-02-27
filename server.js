@@ -81,7 +81,7 @@ const transporter = nodemailer.createTransport({
 async function sendCSEmail(data, rowNumber) {
   await transporter.sendMail({
     from: `"ACS Warranty" <${process.env.SMTP_USER}>`,
-    to: "jesse@automotivecircuitsolutions.com",
+   to: "support@automotivecircuitsolutions.com",
     subject: `New Warranty Claim – Order ${data.originalOrderNumber || "N/A"}`,
     text:
       `New warranty claim submitted\n\n` +
